@@ -48,7 +48,8 @@ class PodRecord(JsonModel):
     last_N_L2_classes: Optional[list]
     total_specimens: Optional[int]
     last_specimen_created_time: Optional[datetime.datetime]
-    ### Sensor data
+    ### Sensors
+    ## Sensor data
     sensors_endpoint: Optional[str]
     sensors_address: Optional[str]
     sensors_frequency: Optional[int]
@@ -56,6 +57,7 @@ class PodRecord(JsonModel):
     location_name: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
+    altitude: Optional[float]
     # BME280
     temperature: Optional[float]
     pressure: Optional[float]
@@ -64,10 +66,39 @@ class PodRecord(JsonModel):
     battery_level: Optional[float]
     # WiFi
     rssi: Optional[int]
-    # Management
-    hibernation_status: Optional[str]
-    hibernation_address: Optional[str]
-    restart_address: Optional[str]
+    ## Sensor status
+    # camera
+    camera_available: Optional[bool]
+    # bme280
+    bme280_available: Optional[bool]
+    # gps
+    gps_available: Optional[bool]
+    gps_awake: Optional[bool]
+    # battery
+    battery_reader_available: Optional[bool] ()
+    # sensor reader status
+    is_reading_sensors: Optional[bool]
+    is_reading_gps: Optional[bool]
+    ### Configuration
+    ## Sensors
+    bme280_scl_pin: Optional[int]
+    bme280_sda_pin: Optional[int]
+    gps_rx_pin: Optional[int]
+    gps_tx_pin: Optional[int]
+    gps_pwrctl_available: Optional[bool] 
+    gps_pwrctl_pin: Optional[int]
+    battery_reader_pin: Optional[int]
+    ## Camera (many available, add as needed)
+    jpg_quality: Optional[int]
+    ### Management
+    ## Naptime
+    naptime_enabled: Optional[bool]
+    naptime_baseline: Optional[int]
+    ## Bedtime
+    bedtime_active: Optional[bool]
+    bedtime_max_wait: Optional[int]
+    bedtime_start: Optional[datetime.datetime]
+    bedtime_end: Optional[datetime.datetime]
 
 
 class L1Card(EmbeddedJsonModel):
