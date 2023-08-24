@@ -23,11 +23,14 @@ class PodRecord(JsonModel):
     Sister to GlobalPods Pod objects. Updated when GlobalPods are updated.
     Stores ephemeral data about the Pod. Last readings, detections, etc.
     '''
+    
+    #### Basic Pod info
     name: Optional[str] = Field(index=True)
     address: Optional[str]
     address_type: Optional[str]
     swarm_name: Optional[str] = Field(index=True)
     retry_connection_period: Optional[int]
+    
     ### Stream params
     stream_type: Optional[str]
     downsample_fps: Optional[int]
@@ -36,7 +39,8 @@ class PodRecord(JsonModel):
     buffer_size: Optional[int]
     stream_address: Optional[str]
     snapshot_address: Optional[str]
-    snapshot_frequency: Optional[int]
+    snapshot_interval: Optional[int]
+    
     ### Pod status
     connection_status: Optional[str]
     last_seen: Optional[datetime.datetime]
@@ -48,57 +52,70 @@ class PodRecord(JsonModel):
     last_N_L2_classes: Optional[list]
     total_specimens: Optional[int]
     last_specimen_created_time: Optional[datetime.datetime]
-    ### Sensors
-    ## Sensor data
+    
+    ##### PodOS advanced features (0.4.x+)
+    #### PodOS endpoints
+    get_config_endpoint: Optional[str]
+    restart_endpoint: Optional[str]
+    get_sensor_status_endpoint: Optional[str]
     sensors_endpoint: Optional[str]
-    sensors_address: Optional[str]
-    sensors_frequency: Optional[int]
-    # Pod location (hardcoded for now)
-    location_name: Optional[str]
-    latitude: Optional[float]
-    longitude: Optional[float]
-    altitude: Optional[float]
-    # BME280
-    temperature: Optional[float]
-    pressure: Optional[float]
-    humidity: Optional[float]
-    # Battery
-    battery_level: Optional[float]
-    # WiFi
-    rssi: Optional[int]
-    ## Sensor status
-    # camera
+    update_GPS_endpoint: Optional[str]
+    naptime_endpoint: Optional[str]
+    bedtime_endpoint: Optional[str]
+    shutdown_GPS_endpoint: Optional[str]
+    wakeup_GPS_endpoint: Optional[str]
+    
+    ### Update intervals
+    get_config_interval: Optional[int]
+    get_sensor_status_interval: Optional[int]
+    get_sensors_interval: Optional[int]
+    get_update_GPS_before_init_fix_interval: Optional[int]
+    snapshot_interval: Optional[float] # float, as it can be a fraction of a second.
+    
+    #### PodOS sensors
+    ### Sensor status
     camera_available: Optional[bool]
-    # bme280
     bme280_available: Optional[bool]
-    # gps
     gps_available: Optional[bool]
     gps_awake: Optional[bool]
-    # battery
-    battery_reader_available: Optional[bool] ()
-    # sensor reader status
-    is_reading_sensors: Optional[bool]
-    is_reading_gps: Optional[bool]
-    ### Configuration
-    ## Sensors
+    battery_reader_available: Optional[bool]
+    
+    ### Sensor config
     bme280_scl_pin: Optional[int]
     bme280_sda_pin: Optional[int]
     gps_rx_pin: Optional[int]
     gps_tx_pin: Optional[int]
-    gps_pwrctl_available: Optional[bool] 
+    gps_pwrctl_available: Optional[bool]
     gps_pwrctl_pin: Optional[int]
     battery_reader_pin: Optional[int]
-    ## Camera (many available, add as needed)
     jpg_quality: Optional[int]
-    ### Management
-    ## Naptime
+    
+    ### Sensor data
+    location_name: Optional[str]
+    latitude: Optional[float]
+    longitude: Optional[float]
+    altitude: Optional[float]
+    temperature: Optional[float]
+    pressure: Optional[float]
+    humidity: Optional[float]
+    battery_level: Optional[float]
+    rssi: Optional[int]
+    
+    #### PodOS management
+    ### Naptime
     naptime_enabled: Optional[bool]
     naptime_baseline: Optional[int]
-    ## Bedtime
+    
+    ### Bedtime
     bedtime_active: Optional[bool]
     bedtime_max_wait: Optional[int]
     bedtime_start: Optional[datetime.datetime]
     bedtime_end: Optional[datetime.datetime]
+    
+    #### PodOS metadata
+    pod_name: Optional[str]
+    firmware_name: Optional[str]
+    firmware_version: Optional[str]
 
 
 class L1Card(EmbeddedJsonModel):
