@@ -5,7 +5,7 @@ import datetime
 import base64
 import cv2
 
-from PolliServer.constants import DATETIME_FORMAT_STRING, redis, redis_img, THUMBNAIL_SIZE
+from PolliServer.constants import DATETIME_FORMAT_STRING, r, r_img, THUMBNAIL_SIZE
 from PolliServer.helpers.redis_json_helper import RedisJsonHelper
 from PolliServer.utils import *
 
@@ -39,7 +39,7 @@ async def grab_timeline_data(start_date: Optional[str] = None,
     6) Return JSON
     """
 
-    rj = RedisJsonHelper(redis)
+    rj = RedisJsonHelper(r)
 
     # Get all SpecimenRecords
     records = SpecimenRecord.all_pks()
@@ -69,7 +69,7 @@ async def grab_timeline_data(start_date: Optional[str] = None,
         for pk in records:
             try:
                 img_pk = SpecimenRecord.get(pk).media.pk
-                img = get_image_from_redis(img_pk, redis_img, output_format='cv2')
+                img = get_image_from_redis(img_pk, r_img, output_format='cv2')
                 # Crop to detection bbox
                 # HACK: These are absolute coords! Supposed to be relative.
                 bbox_LL_abs = SpecimenRecord.get(pk).detection.bboxLL

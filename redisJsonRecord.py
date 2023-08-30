@@ -39,7 +39,7 @@ class PodRecord(JsonModel):
     buffer_size: Optional[int]
     stream_address: Optional[str]
     snapshot_address: Optional[str]
-    snapshot_interval: Optional[int]
+    get_snapshot_interval: Optional[int]
     
     ### Pod status
     connection_status: Optional[str]
@@ -69,8 +69,8 @@ class PodRecord(JsonModel):
     get_config_interval: Optional[int]
     get_sensor_status_interval: Optional[int]
     get_sensors_interval: Optional[int]
-    get_update_GPS_before_init_fix_interval: Optional[int]
-    snapshot_interval: Optional[float] # float, as it can be a fraction of a second.
+    get_update_GPS_interval: Optional[int]
+    get_snapshot_interval: Optional[float] # float, as it can be a fraction of a second.
     
     #### PodOS sensors
     ### Sensor status
@@ -117,7 +117,6 @@ class PodRecord(JsonModel):
     firmware_name: Optional[str]
     firmware_version: Optional[str]
 
-
 class L1Card(EmbeddedJsonModel):
     '''
     Records details about the module producing some SpecimenRecord or EventRecord.
@@ -155,20 +154,20 @@ class Taxa(EmbeddedJsonModel):
     taxonID_score: Optional[float] = Field(index=True)
     taxonRank: Optional[str] = Field(index=True) # Lowest taxonomic rank for which a classification was made.
     L10_taxonID: Optional[str] = Field(index=True)
-    L10_taxonID_str: Optional[str]
-    L10_taxonScore: Optional[float]
+    L10_taxonID_str: Optional[str] = Field(index=True)
+    L10_taxonScore: Optional[float] = Field(index=True)
     L20_taxonID: Optional[str] = Field(index=True)
     L20_taxonID_str: Optional[str]
-    L20_taxonScore: Optional[float]
+    L20_taxonScore: Optional[float] = Field(index=True)
     L30_taxonID: Optional[str] = Field(index=True)
     L30_taxonID_str: Optional[str]
-    L30_taxonScore: Optional[float]
+    L30_taxonScore: Optional[float] = Field(index=True)
     L40_taxonID: Optional[str] = Field(index=True)
     L40_taxonID_str: Optional[str]
     L40_taxonScore: Optional[float]
     L50_taxonID: Optional[str] = Field(index=True)
     L50_taxonID_str: Optional[str]
-    L50_taxonScore: Optional[float]
+    L50_taxonScore: Optional[float] = Field(index=True)
 
 class Media(EmbeddedJsonModel):
     '''
@@ -191,7 +190,7 @@ class Frame(EmbeddedJsonModel):
 class Location(EmbeddedJsonModel):
     lat: Optional[float]
     lon: Optional[float]
-    loc_name: Optional[str]
+    loc_name: Optional[str] = Field(index=True)
 
 class Detection(EmbeddedJsonModel):
     '''
@@ -200,7 +199,7 @@ class Detection(EmbeddedJsonModel):
     classification: Optional[str]
     bboxLL: Optional[tuple]
     bboxUR: Optional[tuple]
-    score: Optional[float]
+    score: Optional[float] = Field(index=True)
 
 
 
