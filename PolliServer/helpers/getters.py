@@ -8,7 +8,7 @@ import datetime
 import base64
 import cv2
 
-from PolliServer.constants import DATETIME_FORMAT_STRING, redis, redis_img, THUMBNAIL_SIZE
+from PolliServer.constants import DATETIME_FORMAT_STRING, r, r_img, THUMBNAIL_SIZE
 from PolliServer.utils import *
 
 from redisJsonRecord import *

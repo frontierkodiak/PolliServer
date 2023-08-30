@@ -6,7 +6,7 @@ import datetime
 import traceback
 
 
-from PolliServer.constants import DATETIME_FORMAT_STRING, redis, redis_img, THUMBNAIL_SIZE
+from PolliServer.constants import DATETIME_FORMAT_STRING, r, r_img, THUMBNAIL_SIZE
 from PolliServer.helpers.grabbers import *
 from PolliServer.helpers.getters import *
 

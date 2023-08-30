@@ -1,7 +1,4 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -20,9 +17,22 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/.venv/bin/python3",
+                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3",
                 "REDIS_OM_URL": "redis://100.118.87.109:6380/0"  // Add the REDIS_OM_URL environment variable here
-            },        
+            }        
         },
+        {
+            "name": "tester",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/caleb/repo/PolliServer/PolliServer/tester.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "/home/caleb/repo/PolliServer/PolliServer",  // Sets the working directory to where the script is located
+            "env": {
+                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3",
+                "REDIS_OM_URL": "redis://100.118.87.109:6380/0"
+            }
+        }
     ]
 }
