@@ -5,32 +5,46 @@ from helpers.redis_json_helper import RedisJsonHelper
 def main():
     # Initialize the helper
     helper = RedisJsonHelper()
+    
+    # Test filter_pods_by_pod_name ✅
+    pod_records = helper.filter_podrecords_by_pod_name("Pod11")
+    print("name == Pod11 (PodRecord):", pod_records)
+    
+    # Test filter_specimenrecords_by_podID ✅
+    specimen_records = helper.filter_specimenrecords_by_podID("Pod11")
+    print("podID == Pod11 (SpecimenRecords):", specimen_records)
 
-    # Test filter_by_pod_id
-    pod_records = helper.filter_by_pod_id(["Pod5", "Pod8"])
-    print("Pod Records:", pod_records)
+    # Test filter_frames_by_pod_id ❗
+    frame_records = helper.filter_framerecords_by_pod_id("Pod11")
+    print("Pod11 (FrameRecord):", frame_records)
 
-    # Test filter_by_location
-    location_records = helper.filter_by_location("London")
+    # Test filter_frames_by_location ❔
+    location_records = helper.filter_framerecords_by_location("suet")
     print("Location Records:", location_records)
 
-    # Test filter_species_only
-    species_records = helper.filter_species_only()
-    print("Species Records:", species_records)
+    # Test filter_specimens_by_taxonRank ✅
+    species_records = helper.filter_specimens_by_S2_taxonRank("L10")
+    print("S2_taxonRank == L10 (specimenRecord):", species_records)
 
-    # Test filter_by_L1_conf_thresh
-    L1_conf_records = helper.filter_by_L1_conf_thresh(0.5)
-    print("L1 Confidence Records:", L1_conf_records)
+    # Test filter_specimens_by_S1_score ✅
+    S1_conf_records = helper.filter_specimenrecords_by_S1_score(0.1)
+    print("S1 Confidence Records:", S1_conf_records)
 
-    # Test filter_by_L2_conf_thresh
-    L2_conf_records = helper.filter_by_L2_conf_thresh(0.7)
-    print("L2 Confidence Records:", L2_conf_records)
+    # Test filter_specimens_by_S2_taxonID_score ✅
+    S2_conf_records = helper.filter_specimenrecords_by_S2_taxonID_score(0.2)
+    print("S2 Confidence Records:", S2_conf_records)
 
-    # Test get_unique_values
-    # If you decide to implement get_unique_values, adjust it similarly.
-    # For now, I'm keeping the index_name parameter in the call for this function.
-    unique_values = helper.get_unique_values(":PolliOS.engine.records.redisJsonRecord.PodRecord:index", "$.frame.podID")
-    print("Unique Pod IDs:", unique_values)
+    # # Test get_unique_pod_names_podrecord ✅
+    unique_pod_names = helper.get_unique_pod_names_podrecord()
+    print(f"Unique Pod Names (PodRecord): {unique_pod_names}")
+    
+    # Test get_unique_podIDs_framerecord
+    unique_podIDs = helper.get_unique_podIDs_framerecord()
+    print(f"Unique Pod IDs (FrameRecord): {unique_podIDs}")
+    
+    # Test get_unique_podIDs_specimenrecord ✅
+    unique_podIDs = helper.get_unique_podIDs_specimenrecord()
+    print(f"Unique Pod IDs (SpecimenRecord): {unique_podIDs}")
 
 if __name__ == "__main__":
     main()

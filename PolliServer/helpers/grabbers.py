@@ -5,16 +5,42 @@ import datetime
 import base64
 import cv2
 
-from PolliServer.constants import DATETIME_FORMAT_STRING, r, r_img, THUMBNAIL_SIZE
+from PolliServer.constants import *
 from PolliServer.helpers.redis_json_helper import RedisJsonHelper
 from PolliServer.utils import *
 
-from redisJsonRecord import *
+# from redisJsonRecord import *
+from recordModels import *
 from PolliOS_utils import get_image_from_redis, crop_image_absolute_coords
 
 
 
+async def build_timeline_data_query(start_date=None, end_date=None, pod_id=None, location=None, L1_conf_thresh=0.0, L2_conf_thresh=0.0, species_only=False):
+    """
+    Searches for SpecimenRecords matching the given parameters.
+    """
+    query_parts = []
+    
+    if start_date and end_date:
+        query_parts.append(f"@timestamp:[{start_date} {end_date}]")
+    
+    if pod_id:
+        pod_ids = "|".join(pod_id)
+        query_parts.append(f"@podID:{{'{pod_ids}'}}")
+    
+    if location:
+        query_parts.append(f"@loc_name:{{'{location}'}}")
 
+    if L1_conf_thresh:
+        query_parts.append(f"@S1_score:[{L1_conf_thresh} +inf]")
+
+    if L2_conf_thresh:
+        query_parts.append(f"@S2_taxonID_score:[{L2_conf_thresh} +inf]")
+
+    if species_only:
+        query_parts.append(f"@S2_taxonRank:{{L10}}")
+
+    return " ".join(query_parts)
 
 
 async def grab_timeline_data(start_date: Optional[str] = None,
@@ -41,26 +67,12 @@ async def grab_timeline_data(start_date: Optional[str] = None,
 
     rj = RedisJsonHelper(r)
 
-    # Get all SpecimenRecords
-    records = SpecimenRecord.all_pks()
+    # Build and execute the query
+    query = await build_query(start_date, end_date, pod_id, location, L1_conf_thresh, L2_conf_thresh, species_only)
+    results = r.execute_command('FT.SEARCH', 'SpecimenRecord_index', query)
 
-    # Apply the filters
-    records = rj.filter_by_date(records, start_date, end_date)
-    
-    if pod_id:
-        records = rj.filter_by_pod_id(records, pod_id)
+    records = [res for i, res in enumerate(results) if i % 2 != 0]  # Parse the results to get only the records
 
-    if location:
-        records = rj.filter_by_location(records, location)
-
-    if species_only:
-        records = rj.filter_species_only(records)
-
-    if L1_conf_thresh:
-        records = rj.filter_by_L1_conf_thresh(records, L1_conf_thresh)
-
-    if L2_conf_thresh:
-        records = rj.filter_by_L2_conf_thresh(records, L2_conf_thresh)
 
     # Optionally include images
     if incl_images:
