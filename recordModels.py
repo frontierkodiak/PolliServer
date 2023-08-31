@@ -25,7 +25,7 @@ class PodRecord(JsonModel):
     '''
     
     #### Basic Pod info
-    name: Optional[str] = Field(index=True)
+    name: Optional[str] = Field(index=True) # TODO: Merge name and pod_name
     address: Optional[str]
     address_type: Optional[str]
     swarm_name: Optional[str] = Field(index=True)
@@ -42,7 +42,7 @@ class PodRecord(JsonModel):
     get_snapshot_interval: Optional[int]
     
     ### Pod status
-    connection_status: Optional[str]
+    connection_status: Optional[str] = Field(index=True)
     last_seen: Optional[datetime.datetime]
     queue_length: Optional[int]
     total_frames: Optional[int]
@@ -74,11 +74,11 @@ class PodRecord(JsonModel):
     
     #### PodOS sensors
     ### Sensor status
-    camera_available: Optional[bool]
-    bme280_available: Optional[bool]
-    gps_available: Optional[bool]
-    gps_awake: Optional[bool]
-    battery_reader_available: Optional[bool]
+    camera_available: Optional[bool] = Field(index=True)
+    bme280_available: Optional[bool] = Field(index=True)
+    gps_available: Optional[bool] = Field(index=True)
+    gps_awake: Optional[bool] = Field(index=True)
+    battery_reader_available: Optional[bool] = Field(index=True)
     
     ### Sensor config
     bme280_scl_pin: Optional[int]
@@ -91,7 +91,7 @@ class PodRecord(JsonModel):
     jpg_quality: Optional[int]
     
     ### Sensor data
-    location_name: Optional[str]
+    location_name: Optional[str] = Field(index=True)
     latitude: Optional[float]
     longitude: Optional[float]
     altitude: Optional[float]
@@ -107,52 +107,34 @@ class PodRecord(JsonModel):
     naptime_baseline: Optional[int]
     
     ### Bedtime
-    bedtime_active: Optional[bool]
+    bedtime_active: Optional[bool] = Field(index=True)
     bedtime_max_wait: Optional[int]
     bedtime_start: Optional[datetime.datetime]
     bedtime_end: Optional[datetime.datetime]
     
     #### PodOS metadata
-    pod_name: Optional[str]
+    pod_name: Optional[str] = Field(index=True)
     firmware_name: Optional[str]
     firmware_version: Optional[str]
-
-class L1Card(EmbeddedJsonModel):
-    '''
-    Records details about the module producing some SpecimenRecord or EventRecord.
-    '''
-    tag: Optional[str] = Field(index=True)
-    vers: Optional[str]
-    classification: Optional[str]
-    score: Optional[float] = Field(index=True)
-
-class L2Card(EmbeddedJsonModel):
-    '''
-    Records details about the module producing some SpecimenRecord or EventRecord.
-    '''
-    tag: Optional[str] = Field(index=True)
-    vers: Optional[str]
-    classification: Optional[str]
-    taxonID: Optional[str] = Field(index=True) # DEV: Might refactor relationship b/w L2Card and Taxa.
-    score: Optional[float] = Field(index=True)
-
-class L3Card(EmbeddedJsonModel):
-    '''
-    Records details about the module producing some SpecimenRecord or EventRecord.
-    '''
-    tag: Optional[str] = Field(index=True)
-    vers: Optional[str]
-    classification: Optional[str]
-    score: Optional[float]
-
-class Taxa(EmbeddedJsonModel):
-    '''
-    Records taxonomic information about the specimen.
-    '''
-    taxonID: Optional[str] = Field(index=True) # Placeholder. This key will be used to reference master taxon table.
-    taxonID_str: Optional[str] = Field(index=True)
-    taxonID_score: Optional[float] = Field(index=True)
-    taxonRank: Optional[str] = Field(index=True) # Lowest taxonomic rank for which a classification was made.
+    
+    
+class SpecimenRecord(JsonModel):
+## Stage 1 (detection)
+### Merge old L1Card & detection
+    bboxLL: Optional[tuple]
+    bboxUR: Optional[tuple]
+    S1_score: Optional[float] = Field(index=True)
+    S1_tag: Optional[str] = Field(index=True)
+    S1_class: Optional[str]
+## Stage 2: (classification)
+    S2_tag: Optional[str] = Field(index=True)
+### Lowest taxa level acquired (redundant with per-level info but useful)
+    S2_taxonID: Optional[str] = Field(index=True) # used to reference master taxon table.
+    S2_taxonID_str: Optional[str] = Field(index=True)
+    S2_taxonID_score: Optional[float] = Field(index=True)
+    S2_taxonRank: Optional[str] = Field(index=True)
+## Taxa
+### Per-level data
     L10_taxonID: Optional[str] = Field(index=True)
     L10_taxonID_str: Optional[str] = Field(index=True)
     L10_taxonScore: Optional[float] = Field(index=True)
@@ -168,70 +150,45 @@ class Taxa(EmbeddedJsonModel):
     L50_taxonID: Optional[str] = Field(index=True)
     L50_taxonID_str: Optional[str]
     L50_taxonScore: Optional[float] = Field(index=True)
-
-class Media(EmbeddedJsonModel):
-    '''
-    Records media details for a specimen. CLARIFY: Not sure if I want to refactor this info from FrameRecord right now.
-    '''
+## Media
     mediaID: Optional[str]
     mediaType: Optional[str]
     height_px: Optional[int]
     width_px: Optional[int]
-    persist_policy: Optional[str] # Would need to be set by module creating this record.
-
-class Frame(EmbeddedJsonModel):
-    '''
-    '''
+    media_persist_policy: Optional[str] # Would need to be set by module creating this record.
+## Frame    
     timestamp: Optional[datetime.datetime] = Field(index=True)
     run_name: Optional[str] = Field(index=True) 
     podID: Optional[str] = Field(index=True)
     swarm_name: Optional[str] = Field(index=True)
-
-class Location(EmbeddedJsonModel):
-    lat: Optional[float]
-    lon: Optional[float]
+## Location
+    lat: Optional[float] = Field(index=True)
+    lon: Optional[float] = Field(index=True)
     loc_name: Optional[str] = Field(index=True)
-
-class Detection(EmbeddedJsonModel):
-    '''
-    Only used when creating from L1 module results.
-    '''
-    classification: Optional[str]
-    bboxLL: Optional[tuple]
-    bboxUR: Optional[tuple]
-    score: Optional[float] = Field(index=True)
-
-
+    
 
 class FrameRecord(JsonModel):
     '''
     FrameRecord is an ephemeral record created when a frame is received by the HubOS engine.
     Its properties are used to populate other records created by the engine.
     '''
-    media: Media
-    frame: Frame
-    location: Location
+## Media
+    mediaID: Optional[str]
+    mediaType: Optional[str]
+    height_px: Optional[int]
+    width_px: Optional[int]
+    persist_policy: Optional[str] # Would need to be set by module creating this record.
+## Frame    
+    timestamp: Optional[datetime.datetime] = Field(index=True)
+    run_name: Optional[str] = Field(index=True) 
+    podID: Optional[str] = Field(index=True)
+    swarm_name: Optional[str] = Field(index=True)
+## Location
+    lat: Optional[float] = Field(index=True)
+    lon: Optional[float] = Field(index=True)
+    loc_name: Optional[str] = Field(index=True)
     processed: Optional[bool] = Field(index=True) # DEV: Has frame been processed by engine? Used when merging FrameRecords from PolliOS Lite (offline mode, on Hub).
-    
-class SpecimenRecord(JsonModel):
-    taxa: Taxa
-    L1Card: Optional[L1Card]
-    L2Card: Optional[L2Card]
-    L3Card: Optional[L3Card]
-    media: Media
-    frame: Frame
-    location: Optional[Location]
-    detection: Detection
-
-    # class Config:
-    #     extra = "forbid"
-
-
+  
+  
 class ImageRecord(HashModel):
     image: bytes
-    # class Meta:
-    #     database = Redis(db = 1, decode_responses=False)
-
-
-class MetaModel(JsonModel):
-    foo: Optional[str]

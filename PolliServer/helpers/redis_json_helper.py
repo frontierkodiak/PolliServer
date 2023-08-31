@@ -5,11 +5,13 @@ import redis.commands.search.reducers as reducers
 from redis.commands.search.field import TextField, NumericField, TagField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 from redis.commands.search.query import NumericFilter, Query
-from typing import List, Optional
+from typing import List, Set, Optional
 
 
-from PolliServer.constants import DATETIME_FORMAT_STRING, r, r_img, THUMBNAIL_SIZE
-from redisJsonRecord import *
+from PolliServer.constants import *
+# from redisJsonRecord import *
+from recordModels import *
+
 
 class RedisJsonHelper:
 
@@ -20,35 +22,130 @@ class RedisJsonHelper:
         # We'll come back to this later.
         results = FrameRecord.find(FrameRecord.frame.timestamp >= start_date, FrameRecord.frame.timestamp <= end_date).all()
         return [record.id for record in results]
+    
+    
+    def filter_podrecords_by_pod_name(self, pod_name: str) -> List[str]:
+        query = f'@name:{{{pod_name}}}'
+        result = r.execute_command('FT.SEARCH', PodRecord_index, query, 'NOCONTENT')
+        return result[1::1]
+    
+    def filter_specimenrecords_by_podID(self, pod_name: str) -> List[str]:
+        query = f'@podID:{{{pod_name}}}'
+        result = r.execute_command('FT.SEARCH', SpecimenRecord_index, query, 'NOCONTENT')
+        return result[1::1]
 
-    def filter_by_pod_id(self, pod_id: List[str]) -> List[str]:
-        results = []
-        for pid in pod_id:
-            results.extend(FrameRecord.find(FrameRecord.frame.podID == pid).all())
-        return [record.id for record in results]
+    def filter_framerecords_by_pod_id(self, pod_id: str) -> List[str]:
+        query = f'@podID:{{{pod_id}}}'
+        result = r.execute_command('FT.SEARCH', FrameRecord_index, query, 'NOCONTENT')
+        return result[1::1]
 
-    def filter_by_location(self, location: str) -> List[str]:
-        results = FrameRecord.find(FrameRecord.location.loc_name == location).all()
-        return [record.id for record in results]
+    def filter_framerecords_by_location(self, location: str) -> List[str]:
+        query = f"@loc_name:{{{location}}}"
+        results = r.execute_command('FT.SEARCH', FrameRecord_index, query, 'NOCONTENT')
+        return results[1::1]
 
-    def filter_species_only(self) -> List[str]:
-        results = SpecimenRecord.find(SpecimenRecord.taxa.L10_taxonID_str != None).all()
-        return [record.id for record in results]
+    def filter_specimens_by_S2_taxonRank(self, taxon_rank: str) -> List[str]:
+        query = f"@S2_taxonRank:{{{taxon_rank}}}"
+        results = r.execute_command('FT.SEARCH', SpecimenRecord_index, query)
+        return results[1::1]
 
-    def filter_by_L1_conf_thresh(self, L1_conf_thresh: float) -> List[str]:
-        results = SpecimenRecord.find(SpecimenRecord.L1Card.score >= L1_conf_thresh).all()
-        return [record.id for record in results]
+    def filter_specimenrecords_by_S1_score(self, L1_conf_thresh: float) -> List[str]:
+        query = f"@S1_score:[{L1_conf_thresh} +inf]"
+        results = r.execute_command('FT.SEARCH', SpecimenRecord_index, query, 'NOCONTENT')
+        return results[1::1]
 
-    def filter_by_L2_conf_thresh(self, L2_conf_thresh: float) -> List[str]:
-        results = SpecimenRecord.find(SpecimenRecord.L2Card.score >= L2_conf_thresh).all()
-        return [record.id for record in results]
+    def filter_specimenrecords_by_S2_taxonID_score(self, L2_conf_thresh: float) -> List[str]:
+        query = f"@S2_taxonID_score:[{L2_conf_thresh} +inf]"
+        results = r.execute_command('FT.SEARCH', SpecimenRecord_index, query, 'NOCONTENT')
+        return results[1::1]
 
-    def get_unique_values(self, path: str) -> List[str]:
-        # This method might be a bit more complex with redis-om.
-        # Since direct querying like this might not be straightforward, 
-        # consider fetching all records and then extracting the unique values using Python.
-        # Alternatively, you can use the `redis_conn` approach to run Redis commands directly.
-        pass
+
+    def get_unique_pod_names_podrecord(self) -> Set[str]:
+        result = r.execute_command('FT.SEARCH', PodRecord_index, "*", "LIMIT", "0", "1000")
+        
+        # Parse the result. For every record, every even index is a key and odd index is a value.
+        # Assuming that the values are stored as serialized JSON strings in Redis, 
+        # we need to deserialize them to extract the name field.
+        import json
+
+        # Extract all the JSON values
+        record_values = result[2::2]
+        
+        names = set()
+
+        # Loop through each record's data
+        for record_data in record_values:
+            # The first item (index 0) is the field name, 
+            # the second item (index 1) is the serialized JSON string
+            json_string = record_data[1]
+            
+            # Deserialize the JSON string to a Python dictionary
+            data_dict = json.loads(json_string)
+            
+            # Add the 'name' value to our set, ensuring uniqueness
+            name_value = data_dict.get('name')
+            if name_value:  # This checks if the name value is not None or empty
+                names.add(name_value)
+        
+        return names
+    
+    def get_unique_podIDs_framerecord(self) -> Set[str]:
+        result = r.execute_command('FT.SEARCH', FrameRecord_index, "*", "LIMIT", "0", "1000")
+        
+        # Parse the result. For every record, every even index is a key and odd index is a value.
+        # Assuming that the values are stored as serialized JSON strings in Redis, 
+        # we need to deserialize them to extract the name field.
+        import json
+
+        # Extract all the JSON values
+        record_values = result[2::2]
+        
+        names = set()
+
+        # Loop through each record's data
+        for record_data in record_values:
+            # The first item (index 0) is the field name, 
+            # the second item (index 1) is the serialized JSON string
+            json_string = record_data[1]
+            
+            # Deserialize the JSON string to a Python dictionary
+            data_dict = json.loads(json_string)
+            
+            # Add the 'name' value to our set, ensuring uniqueness
+            name_value = data_dict.get('podID')
+            if name_value:  # This checks if the name value is not None or empty
+                names.add(name_value)
+        
+        return names
+    
+    def get_unique_podIDs_specimenrecord(self) -> Set[str]:
+        result = r.execute_command('FT.SEARCH', SpecimenRecord_index, "*", "LIMIT", "0", "1000")
+        
+        # Parse the result. For every record, every even index is a key and odd index is a value.
+        # Assuming that the values are stored as serialized JSON strings in Redis, 
+        # we need to deserialize them to extract the name field.
+        import json
+
+        # Extract all the JSON values
+        record_values = result[2::2]
+        
+        names = set()
+
+        # Loop through each record's data
+        for record_data in record_values:
+            # The first item (index 0) is the field name, 
+            # the second item (index 1) is the serialized JSON string
+            json_string = record_data[1]
+            
+            # Deserialize the JSON string to a Python dictionary
+            data_dict = json.loads(json_string)
+            
+            # Add the 'name' value to our set, ensuring uniqueness
+            name_value = data_dict.get('podID')
+            if name_value:  # This checks if the name value is not None or empty
+                names.add(name_value)
+        
+        return names
 
     async def L10_taxonID_strs_getter(self):
         return self.get_unique_values('.taxa.L10_taxonID_str')

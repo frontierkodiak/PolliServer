@@ -6,11 +6,12 @@ import datetime
 import traceback
 
 
-from PolliServer.constants import DATETIME_FORMAT_STRING, r, r_img, THUMBNAIL_SIZE
+from PolliServer.constants import *
 from PolliServer.helpers.grabbers import *
 from PolliServer.helpers.getters import *
 
-from redisJsonRecord import *
+# from redisJsonRecord import *
+from recordModels import *
 
 app = FastAPI(debug=True)
 origins = [
