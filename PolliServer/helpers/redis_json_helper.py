@@ -6,6 +6,7 @@ from redis.commands.search.field import TextField, NumericField, TagField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 from redis.commands.search.query import NumericFilter, Query
 from typing import List, Set, Optional
+import json
 
 
 from PolliServer.constants import *
@@ -58,111 +59,134 @@ class RedisJsonHelper:
         query = f"@S2_taxonID_score:[{L2_conf_thresh} +inf]"
         results = r.execute_command('FT.SEARCH', SpecimenRecord_index, query, 'NOCONTENT')
         return results[1::1]
-
-
-    def get_unique_pod_names_podrecord(self) -> Set[str]:
-        result = r.execute_command('FT.SEARCH', PodRecord_index, "*", "LIMIT", "0", "1000")
-        
-        # Parse the result. For every record, every even index is a key and odd index is a value.
-        # Assuming that the values are stored as serialized JSON strings in Redis, 
-        # we need to deserialize them to extract the name field.
-        import json
-
-        # Extract all the JSON values
-        record_values = result[2::2]
-        
-        names = set()
-
-        # Loop through each record's data
-        for record_data in record_values:
-            # The first item (index 0) is the field name, 
-            # the second item (index 1) is the serialized JSON string
-            json_string = record_data[1]
-            
-            # Deserialize the JSON string to a Python dictionary
-            data_dict = json.loads(json_string)
-            
-            # Add the 'name' value to our set, ensuring uniqueness
-            name_value = data_dict.get('name')
-            if name_value:  # This checks if the name value is not None or empty
-                names.add(name_value)
-        
-        return names
     
-    def get_unique_podIDs_framerecord(self) -> Set[str]:
-        result = r.execute_command('FT.SEARCH', FrameRecord_index, "*", "LIMIT", "0", "1000")
+    def get_unique_values(self, index: str, field_name: str) -> Set[str]:
+        result = r.execute_command('FT.SEARCH', index, "*", "LIMIT", "0", "1000")
         
-        # Parse the result. For every record, every even index is a key and odd index is a value.
-        # Assuming that the values are stored as serialized JSON strings in Redis, 
-        # we need to deserialize them to extract the name field.
-        import json
-
-        # Extract all the JSON values
         record_values = result[2::2]
-        
-        names = set()
+        unique_values = set()
 
-        # Loop through each record's data
         for record_data in record_values:
-            # The first item (index 0) is the field name, 
-            # the second item (index 1) is the serialized JSON string
             json_string = record_data[1]
-            
-            # Deserialize the JSON string to a Python dictionary
             data_dict = json.loads(json_string)
-            
-            # Add the 'name' value to our set, ensuring uniqueness
-            name_value = data_dict.get('podID')
-            if name_value:  # This checks if the name value is not None or empty
-                names.add(name_value)
+            value = data_dict.get(field_name)
+            if value:
+                unique_values.add(value)
         
-        return names
+        return unique_values
+
+    def get_unique_date_values(self, index: str, field_name: str) -> Set[str]:
+        result = r.execute_command('FT.SEARCH', index, "*", "LIMIT", "0", "1000")
+        
+        record_values = result[2::2]
+        unique_dates = set()
+
+        for record_data in record_values:
+            json_string = record_data[1]
+            data_dict = json.loads(json_string)
+            datetime_value = data_dict.get(field_name)
+            if datetime_value:
+                # Convert the datetime string to a date object and then add it to the set
+                date_only = datetime_value.split('T')[0]  # Assuming it's in the format "YYYY-MM-DDTHH:MM:SS"
+                unique_dates.add(date_only)
+        
+        return unique_dates
+
     
-    def get_unique_podIDs_specimenrecord(self) -> Set[str]:
-        result = r.execute_command('FT.SEARCH', SpecimenRecord_index, "*", "LIMIT", "0", "1000")
-        
-        # Parse the result. For every record, every even index is a key and odd index is a value.
-        # Assuming that the values are stored as serialized JSON strings in Redis, 
-        # we need to deserialize them to extract the name field.
-        import json
 
-        # Extract all the JSON values
-        record_values = result[2::2]
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        # def get_unique_podIDs_framerecord(self) -> Set[str]:
+        # result = r.execute_command('FT.SEARCH', FrameRecord_index, "*", "LIMIT", "0", "1000")
         
-        names = set()
+        # # Parse the result. For every record, every even index is a key and odd index is a value.
+        # # Assuming that the values are stored as serialized JSON strings in Redis, 
+        # # we need to deserialize them to extract the name field.
+        # import json
 
-        # Loop through each record's data
-        for record_data in record_values:
-            # The first item (index 0) is the field name, 
-            # the second item (index 1) is the serialized JSON string
-            json_string = record_data[1]
+        # # Extract all the JSON values
+        # record_values = result[2::2]
+        
+        # names = set()
+
+        # # Loop through each record's data
+        # for record_data in record_values:
+        #     # The first item (index 0) is the field name, 
+        #     # the second item (index 1) is the serialized JSON string
+        #     json_string = record_data[1]
             
-            # Deserialize the JSON string to a Python dictionary
-            data_dict = json.loads(json_string)
+        #     # Deserialize the JSON string to a Python dictionary
+        #     data_dict = json.loads(json_string)
             
-            # Add the 'name' value to our set, ensuring uniqueness
-            name_value = data_dict.get('podID')
-            if name_value:  # This checks if the name value is not None or empty
-                names.add(name_value)
+        #     # Add the 'name' value to our set, ensuring uniqueness
+        #     name_value = data_dict.get('podID')
+        #     if name_value:  # This checks if the name value is not None or empty
+        #         names.add(name_value)
         
-        return names
+        # return names
+        
+        
+    # def get_unique_pod_names_podrecord(self) -> Set[str]:
+    #     result = r.execute_command('FT.SEARCH', PodRecord_index, "*", "LIMIT", "0", "1000")
+        
+    #     # Parse the result. For every record, every even index is a key and odd index is a value.
+    #     # Assuming that the values are stored as serialized JSON strings in Redis, 
+    #     # we need to deserialize them to extract the name field.
+    #     import json
 
-    async def L10_taxonID_strs_getter(self):
-        return self.get_unique_values('.taxa.L10_taxonID_str')
+    #     # Extract all the JSON values
+    #     record_values = result[2::2]
+        
+    #     names = set()
 
-    async def pod_ids_getter(self):
-        return self.get_unique_values('.frame.podID')
+    #     # Loop through each record's data
+    #     for record_data in record_values:
+    #         # The first item (index 0) is the field name, 
+    #         # the second item (index 1) is the serialized JSON string
+    #         json_string = record_data[1]
+            
+    #         # Deserialize the JSON string to a Python dictionary
+    #         data_dict = json.loads(json_string)
+            
+    #         # Add the 'name' value to our set, ensuring uniqueness
+    #         name_value = data_dict.get('name')
+    #         if name_value:  # This checks if the name value is not None or empty
+    #             names.add(name_value)
+        
+    #     return names
+    
+        # def get_unique_podIDs_specimenrecord(self) -> Set[str]:
+        # result = r.execute_command('FT.SEARCH', SpecimenRecord_index, "*", "LIMIT", "0", "1000")
+        
+        # # Parse the result. For every record, every even index is a key and odd index is a value.
+        # # Assuming that the values are stored as serialized JSON strings in Redis, 
+        # # we need to deserialize them to extract the name field.
+        # import json
 
-    async def locations_getter(self):
-        return self.get_unique_values('.location.loc_name')
+        # # Extract all the JSON values
+        # record_values = result[2::2]
+        
+        # names = set()
 
-    async def swarms_getter(self):
-        return self.get_unique_values('.frame.swarm_name')
-
-    async def runs_getter(self):
-        return self.get_unique_values('.frame.run_name')
-
-    async def dates_getter(self):
-        records = self._json_query('SpecimenRecord.*')
-        dates = {self._json_query(record, '.frame.timestamp.date()') for record in records if self._json_query(record, '.frame.timestamp')}
-        return sorted(dates)
+        # # Loop through each record's data
+        # for record_data in record_values:
+        #     # The first item (index 0) is the field name, 
+        #     # the second item (index 1) is the serialized JSON string
+        #     json_string = record_data[1]
+            
+        #     # Deserialize the JSON string to a Python dictionary
+        #     data_dict = json.loads(json_string)
+            
+        #     # Add the 'name' value to our set, ensuring uniqueness
+        #     name_value = data_dict.get('podID')
+        #     if name_value:  # This checks if the name value is not None or empty
+        #         names.add(name_value)
+        
+        # return names
