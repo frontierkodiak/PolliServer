@@ -40,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-redis_helper = RedisJsonHelper(redis)
+rj = RedisJsonHelper(r)
 
 # --- Minor (getter) API endpoints --- #
 
@@ -57,8 +57,8 @@ async def get_favicon():
 @app.get("/L10_taxonID_strs")
 async def get_L10_taxonID_strs():
     try:
-        taxon_strs = await redis_helper.L10_taxonID_strs_getter()
-        return taxon_strs
+        taxon_strs = await rj.get_unique_values(SpecimenRecord_index, 'L10_taxonID_str')
+        return sorted(list(taxon_strs))
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
@@ -67,8 +67,8 @@ async def get_L10_taxonID_strs():
 @app.get("/pod_ids")
 async def get_pod_ids():
     try:
-        pod_ids = await redis_helper.pod_ids_getter()
-        return pod_ids
+        pod_ids = await rj.get_unique_values(SpecimenRecord_index, 'podID')
+        return sorted(list(pod_ids))
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
@@ -77,8 +77,8 @@ async def get_pod_ids():
 @app.get("/locations")
 async def get_locations():
     try:
-        locations = await redis_helper.locations_getter()
-        return locations
+        locations = await rj.get_unique_values(SpecimenRecord_index, 'loc_name')
+        return sorted(list(locations))
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
@@ -87,8 +87,8 @@ async def get_locations():
 @app.get("/swarms")
 async def get_swarms():
     try:
-        swarms = await redis_helper.swarms_getter()
-        return swarms
+        swarms = await rj.get_unique_values(SpecimenRecord_index, 'swarm_name')
+        return sorted(list(swarms))
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
@@ -97,8 +97,8 @@ async def get_swarms():
 @app.get("/runs")
 async def get_runs():
     try:
-        runs = await redis_helper.runs_getter()
-        return runs
+        runs = await rj.get_unique_values(SpecimenRecord_index, 'run_name')
+        return sorted(list(runs))
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
@@ -107,8 +107,8 @@ async def get_runs():
 @app.get("/dates")
 async def get_dates():
     try:
-        dates = await redis_helper.dates_getter()
-        return dates
+        dates = await rj.get_unique_date_values(SpecimenRecord_index, 'timestamp')
+        return sorted(list(dates))
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})

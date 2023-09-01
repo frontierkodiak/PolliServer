@@ -68,7 +68,7 @@ async def grab_timeline_data(start_date: Optional[str] = None,
     rj = RedisJsonHelper(r)
 
     # Build and execute the query
-    query = await build_query(start_date, end_date, pod_id, location, L1_conf_thresh, L2_conf_thresh, species_only)
+    query = await build_timeline_data_query(start_date, end_date, pod_id, location, L1_conf_thresh, L2_conf_thresh, species_only)
     results = r.execute_command('FT.SEARCH', 'SpecimenRecord_index', query)
 
     records = [res for i, res in enumerate(results) if i % 2 != 0]  # Parse the results to get only the records
