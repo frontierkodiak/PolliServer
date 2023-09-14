@@ -113,16 +113,18 @@ async def swarm_status(db: AsyncSession = Depends(get_db)):
 @app.get("/api/timeline-data")
 async def timeline_data(start_date: Optional[str] = Query(None),
                   end_date: Optional[str] = Query(None),
-                  pod_id: Optional[List[str]] = Query(None),
+                  podID: Optional[List[str]] = Query(None),
                   species_only: Optional[bool] = Query(False),
-                  L1_conf_thresh: Optional[float] = Query(0.0),
-                  L2_conf_thresh: Optional[float] = Query(0.0),
+                  S1_score_thresh: Optional[float] = Query(0.0),
+                  S2_score_thresh: Optional[float] = Query(0.0),
                   location: Optional[str] = Query(None),
-                  incl_images: Optional[bool] = Query(False)):
+                  S2a_score_thresh: Optional[float] = Query(0.0),
+                  incl_images: Optional[bool] = Query(False),
+                  ):
     
-    timeline_data = grab_timeline_data(start_date = start_date, end_date=end_date, pod_id=pod_id, 
+    timeline_data = grab_timeline_data(start_date = start_date, end_date=end_date, podID=podID, 
                                        location=location, species_only=species_only, 
-                                       L1_conf_thresh=L1_conf_thresh, L2_conf_thresh=L2_conf_thresh, 
-                                       incl_images=incl_images)
+                                       S1_score_thresh=S1_score_thresh, S2_score_thresh=S2_score_thresh, 
+                                       S2a_score_thresh=S2a_score_thresh, incl_images=incl_images)
     
     return timeline_data
