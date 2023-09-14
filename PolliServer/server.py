@@ -42,7 +42,7 @@ async def get_favicon():
     '''
     return FileResponse("assets/favicons/Polli_Dandelion_v1.0_trans.png")
 
-@app.get("/pod_ids")
+@app.get("/podIDs")
 async def get_pod_ids(db: AsyncSession = Depends(get_db)):
     try:
         values = await db.execute(select(SpecimenRecord.podID).distinct())
