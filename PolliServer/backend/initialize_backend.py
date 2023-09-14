@@ -2,13 +2,11 @@
 
 import yaml
 from PolliServer.backend.ServerBackendSingleton import ServerBackendSingleton
-from PolliServer.logger import LoggerSingleton
+from PolliServer.logger.logger import LoggerSingleton
 
 logger = LoggerSingleton().get_logger()
 
-def initialize_backend_from_config():
-    # Path to the config file
-    config_path = 'configs/backend.yml'
+def initialize_backend_from_config(config_path):
     
     # Load and read the YAML file
     with open(config_path, 'r') as file:

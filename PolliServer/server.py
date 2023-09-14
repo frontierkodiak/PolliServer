@@ -15,7 +15,7 @@ from PolliServer.constants import *
 from PolliServer.backend.get_db import get_db
 from PolliServer.helpers.grabbers import *
 from models.models import SpecimenRecord
-from PolliServer.logger import LoggerSingleton
+from PolliServer.logger.logger import LoggerSingleton
 
 logger = LoggerSingleton().get_logger()
 
@@ -42,70 +42,58 @@ async def get_favicon():
     '''
     return FileResponse("assets/favicons/Polli_Dandelion_v1.0_trans.png")
 
-# Endpoint to return all species names
-@app.get("/L10_taxonID_strs")
-async def get_L10_taxonID_strs(db: Session = Depends(get_db)):
-    try:
-        values = db.query(SpecimenRecord.L10_taxonID_str).distinct().all()
-        values_list = [item[0] for item in values]
-        return sorted(values_list)
-    except SQLAlchemyError as e:
-        logger.server_error(f"Getter /L10_taxonID_strs SQLAlchemyError: {e}")
-        return HTTPException(status_code=500, detail=str(e))
-
 @app.get("/pod_ids")
-async def get_pod_ids(db: Session = Depends(get_db)):
+async def get_pod_ids(db: AsyncSession = Depends(get_db)):
     try:
-        values = db.query(SpecimenRecord.podID).distinct().all()
-        values_list = [item[0] for item in values]
+        values = await db.execute(select(SpecimenRecord.podID).distinct())
+        values_list = [item[0] for item in values.scalars().all()]
         return sorted(values_list)
     except SQLAlchemyError as e:
         logger.server_error(f"Getter /pod_ids SQLAlchemyError: {e}")
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/locations")
-async def get_locations(db: Session = Depends(get_db)):
+async def get_locations(db: AsyncSession = Depends(get_db)):
     try:
-        values = db.query(SpecimenRecord.loc_name).distinct().all()
-        values_list = [item[0] for item in values]
+        values = await db.execute(select(SpecimenRecord.loc_name).distinct())
+        values_list = [item[0] for item in values.scalars().all()]
         return sorted(values_list)
     except SQLAlchemyError as e:
         logger.server_error(f"Getter /locations SQLAlchemyError: {e}")
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/swarms")
-async def get_swarms(db: Session = Depends(get_db)):
+async def get_swarms(db: AsyncSession = Depends(get_db)):
     try:
-        values = db.query(SpecimenRecord.swarm_name).distinct().all()
-        values_list = [item[0] for item in values]
+        values = await db.execute(select(SpecimenRecord.swarm_name).distinct())
+        values_list = [item[0] for item in values.scalars().all()]
         return sorted(values_list)
     except SQLAlchemyError as e:
         logger.server_error(f"Getter /swarms SQLAlchemyError: {e}")
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/runs")
-async def get_runs(db: Session = Depends(get_db)):
+async def get_runs(db: AsyncSession = Depends(get_db)):
     try:
-        values = db.query(SpecimenRecord.run_name).distinct().all()
-        values_list = [item[0] for item in values]
+        values = await db.execute(select(SpecimenRecord.run_name).distinct())
+        values_list = [item[0] for item in values.scalars().all()]
         return sorted(values_list)
     except SQLAlchemyError as e:
         logger.server_error(f"Getter /runs SQLAlchemyError: {e}")
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Returns a sorted list of all valid dates
 @app.get("/dates")
-async def get_dates(db: Session = Depends(get_db)):
+async def get_dates(db: AsyncSession = Depends(get_db)):
     try:
         # Extract distinct dates (ignoring time)
-        dates = db.query(func.date(SpecimenRecord.timestamp)).distinct().all()
-        
+        dates = await db.execute(select(func.date(SpecimenRecord.timestamp)).distinct())
         # Convert datetime.date objects to string and sort them
-        dates_list = sorted([date_obj[0].strftime('%Y-%m-%d') for date_obj in dates])
+        dates_list = sorted([date_obj[0].strftime('%Y-%m-%d') for date_obj in dates.scalars().all()])
         return dates_list
     except SQLAlchemyError as e:
         logger.server_error(f"Getter /dates SQLAlchemyError: {e}")
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
 
         
 # --- Major (grabber) API endpoints --- #
