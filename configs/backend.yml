@@ -1,0 +1,8 @@
+databases:
+  - name: polliDB
+    type: mysql
+    address: 100.118.87.109
+    port: 3306
+    user: polli
+    password: polli
+    database: pollidb
