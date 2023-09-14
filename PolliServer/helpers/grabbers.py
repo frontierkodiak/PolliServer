@@ -1,12 +1,13 @@
 # PolliOS/PolliServer/helpers/grabbers.py
 import datetime
 from sqlalchemy.orm import Session
+from sqlalchemy.future import select
 from typing import Optional, List
 import traceback
 
-from PolliOS.PolliServer.constants import *
-from PolliOS.backend.models.models import SpecimenRecord, PodRecord
-from PolliOS.logger import LoggerSingleton
+from PolliServer.constants import *
+from models.models import SpecimenRecord, PodRecord
+from PolliServer.logger import LoggerSingleton
 
 logger = LoggerSingleton().get_logger()
 
@@ -34,8 +35,11 @@ async def grab_swarm_status(db: Session):
         cutoff_time = datetime.datetime.utcnow() - datetime.timedelta(minutes=LAST_SEEN_THRESHOLD_MINUTES)
 
         # Query records from PodRecord table that have a last_seen time greater than the cutoff time
-        records = db.query(PodRecord).filter(PodRecord.last_seen > cutoff_time).all()
-
+        # Use select() and await for asynchronous query
+        stmt = select(PodRecord).filter(PodRecord.last_seen > cutoff_time)
+        result = await db.execute(stmt)
+        records = result.scalars().all()
+        
         swarm_status = []  # Initialize as a list
         for record in records:
 

@@ -1,61 +1,26 @@
-# PolliOS.PolliServer.server.py
+# PolliServer.server.py
 
 from typing import Optional, List
 from fastapi import FastAPI, Query, Depends, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-import datetime
 import traceback
 
 
-from PolliOS.PolliServer.constants import *
-from PolliOS.PolliServer.helpers.grabbers import *
-from PolliOS.backend.models.models import SpecimenRecord
-from PolliOS.logger import LoggerSingleton
+from PolliServer.constants import *
+from PolliServer.backend.get_db import get_db
+from PolliServer.helpers.grabbers import *
+from models.models import SpecimenRecord
+from PolliServer.logger import LoggerSingleton
 
 logger = LoggerSingleton().get_logger()
 
 
 app = FastAPI(debug=True)
-
-origins = [
-    "http://localhost:3000",  # React app address
-    "http://localhost:3005",
-    "http://localhost:3001",
-    "http://calebs-ipad:3000",
-    "http://calebs-ipad:3005",
-    "http://blade:3000",
-    "http://blade:3005",
-    "http://pop-xps:3000",
-    "http://pop-xps:3005",
-    "http://pop-yoga:3000",
-    "http://pop-yoga:3005",
-    "http://r5-win:3000",
-    "http://r5-win:3005",
-    "http://my-infos-s10:3000",
-    "http://my-infos-s10:3005",
-    "http://hub0:3000",
-    "http://hub0:3005",
-    "http://100.126.14.72:3000",
-    "http://100.126.14.72:3005",
-    "http://100.118.87.109:3000",
-    "http://100.118.87.109:3005",
-    "http://100.66.70.13:3000",
-    "http://100.66.70.13:3005",
-    "http://100.87.193.56:3000",
-    "http://100.87.193.56:3005",
-    "http://100.119.21.33:3000",
-    "http://100.119.21.33:3005",
-    "http://100.67.247.68:3000",
-    "http://100.67.247.68:3005",
-    "http://100.114.217.98:3000",
-    "http://100.114.217.98:3005",
-    "http://192.168.1.47:3000",
-    "http://192.168.1.47:3005"
-]
 
 app.add_middleware(
     CORSMiddleware,
@@ -147,7 +112,7 @@ async def get_dates(db: Session = Depends(get_db)):
 
 # Returns a swarm_status JSON swarm_status list
 @app.get("/api/swarm-status")
-async def swarm_status(db: Session = Depends(get_db)):
+async def swarm_status(db: AsyncSession = Depends(get_db)):
     try:
         return await grab_swarm_status(db)
     except Exception as e:
