@@ -17,7 +17,7 @@ async def grab_swarm_status(db: AsyncSession):
     '''
     Get swarm status from PodRecord MySQL database records.
     Returns JSON swarm_status list with the following object values:
-        - pod_id
+        - podID
         - connection_status
         - stream_type
         - loc_name
@@ -44,7 +44,7 @@ async def grab_swarm_status(db: AsyncSession):
         for record in records:
 
             pod_status = {
-                'pod_id': record.name,
+                'podID': record.name,
                 'connection_status': record.connection_status,
                 'stream_type': record.stream_type,
                 'loc_name': record.location_name,
@@ -68,8 +68,8 @@ async def grab_swarm_status(db: AsyncSession):
 
 
 
-def build_timeline_data_query(db_session, start_date=None, end_date=None, pod_id=None, location=None, 
-                             L1_conf_thresh=0.0, L2_conf_thresh=0.0, species_only=False):
+def build_timeline_data_query(db_session, start_date=None, end_date=None, podID=None, location=None, 
+                             S1_score_thresh=0.0, S2_score_thresh=0.0, S2a_score_thresh=0.0, species_only=False):
 
     query = db_session.query(SpecimenRecord)
 
@@ -78,17 +78,20 @@ def build_timeline_data_query(db_session, start_date=None, end_date=None, pod_id
         end_datetime = datetime.strptime(end_date, DATETIME_FORMAT_STRING)
         query = query.filter(SpecimenRecord.timestamp.between(start_datetime, end_datetime))
     
-    if pod_id:
-        query = query.filter(SpecimenRecord.podID.in_(pod_id))
+    if podID:
+        query = query.filter(SpecimenRecord.podID.in_(podID))
     
     if location:
         query = query.filter(SpecimenRecord.loc_name == location)
     
-    if L1_conf_thresh:
-        query = query.filter(SpecimenRecord.S1_score >= L1_conf_thresh)
+    if S1_score_thresh > 0.0:
+        query = query.filter(SpecimenRecord.S1_score >= S1_score_thresh)
     
-    if L2_conf_thresh:
-        query = query.filter(SpecimenRecord.S2_taxonID_score >= L2_conf_thresh)
+    if S2_score_thresh > 0.0:
+        query = query.filter(SpecimenRecord.S2_taxonID_score >= S2_score_thresh)
+        
+    if S2a_score_thresh > 0.0:
+        query = query.filter(SpecimenRecord.S2a_score >= S2a_score_thresh)
     
     if species_only:
         query = query.filter(SpecimenRecord.S2_taxonRank == 'L10')
@@ -101,15 +104,16 @@ def build_timeline_data_query(db_session, start_date=None, end_date=None, pod_id
 async def grab_timeline_data(db: AsyncSession,
                              start_date: Optional[str] = None,
                              end_date: Optional[str] = None,
-                             pod_id: Optional[List[str]] = None,
+                             podID: Optional[List[str]] = None,
                              location: Optional[str] = None,
                              species_only: Optional[bool] = False,
-                             L1_conf_thresh: Optional[float] = 0.0,
-                             L2_conf_thresh: Optional[float] = 0.0,
+                             S1_score_thresh: Optional[float] = 0.0,
+                             S2_score_thresh: Optional[float] = 0.0,
+                             S2a_score_thresh: Optional[float] = 0.0,
                              incl_images: Optional[bool] = False):
 
-    records_query = build_timeline_data_query(db, start_date, end_date, pod_id, location, 
-                                              L1_conf_thresh, L2_conf_thresh, species_only)
+    records_query = build_timeline_data_query(db, start_date, end_date, podID, location, 
+                                              S1_score_thresh, S2_score_thresh, S2a_score_thresh, species_only)
     
     records = records_query.all()
 
@@ -120,18 +124,18 @@ async def grab_timeline_data(db: AsyncSession,
     timeline_data = []
     for record in records:
         record_dict = {
-            "id": record.id,
             "timestamp": record.timestamp.strftime(DATETIME_FORMAT_STRING),
-            "pod_id": record.podID,
+            "podID": record.podID,
             "swarm_name": record.swarm_name,
             "run_name": record.run_name,
             "loc_name": record.loc_name,
-            "loc_lat": record.lat,
-            "loc_lon": record.lon,
-            "taxonID_str": record.S2_taxonID_str,
-            "taxonID_score": record.S2_taxonID_score,
-            "taxonRank": record.S2_taxonRank,
-            "L1_classification": record.S1_class,
+            "latitude": record.latitude,
+            "longitude": record.longitude,
+            "S2_taxonID_str": record.S2_taxonID_str,
+            "S2_taxonID_score": record.S2_taxonID_score,
+            "S2_taxonRank": record.S2_taxonRank,
+            "S2a_score": record.S2a_score,
+            "S1_class": record.S1_class,
         }
         if incl_images:
             record_dict["image"] = None  # Placeholder, add your image logic here
