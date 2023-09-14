@@ -10,15 +10,15 @@
             "justMyCode": true
         },
         {
-            "name": "start_server_blade",
+            "name": "start_server",
             "type": "python",
             "request": "launch",
-            "program": "/home/caleb/repo/PolliServer/start_server.py",
+            "program": "${workspaceFolder}/start_server.py",
+            "args": ["--config", "configs/backend.yml"],  // Added this line
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3",
-                "REDIS_OM_URL": "redis://100.118.87.109:6380/0"  // Add the REDIS_OM_URL environment variable here
+                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
             }        
         },
         {
@@ -30,8 +30,7 @@
             "justMyCode": true,
             "cwd": "/home/caleb/repo/PolliServer/PolliServer",  // Sets the working directory to where the script is located
             "env": {
-                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3",
-                "REDIS_OM_URL": "redis://100.118.87.109:6380/0"
+                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
             }
         }
     ]

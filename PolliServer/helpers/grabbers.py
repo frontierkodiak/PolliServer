@@ -1,19 +1,19 @@
 # PolliOS/PolliServer/helpers/grabbers.py
 import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Optional, List
 import traceback
 
 from PolliServer.constants import *
 from models.models import SpecimenRecord, PodRecord
-from PolliServer.logger import LoggerSingleton
+from PolliServer.logger.logger import LoggerSingleton
 
 logger = LoggerSingleton().get_logger()
 
 
 
-async def grab_swarm_status(db: Session):
+async def grab_swarm_status(db: AsyncSession):
     '''
     Get swarm status from PodRecord MySQL database records.
     Returns JSON swarm_status list with the following object values:
@@ -98,15 +98,15 @@ def build_timeline_data_query(db_session, start_date=None, end_date=None, pod_id
     
     return query
 
-def grab_timeline_data(db: Session,
-                       start_date: Optional[str] = None,
-                       end_date: Optional[str] = None,
-                       pod_id: Optional[List[str]] = None,
-                       location: Optional[str] = None,
-                       species_only: Optional[bool] = False,
-                       L1_conf_thresh: Optional[float] = 0.0,
-                       L2_conf_thresh: Optional[float] = 0.0,
-                       incl_images: Optional[bool] = False):
+async def grab_timeline_data(db: AsyncSession,
+                             start_date: Optional[str] = None,
+                             end_date: Optional[str] = None,
+                             pod_id: Optional[List[str]] = None,
+                             location: Optional[str] = None,
+                             species_only: Optional[bool] = False,
+                             L1_conf_thresh: Optional[float] = 0.0,
+                             L2_conf_thresh: Optional[float] = 0.0,
+                             incl_images: Optional[bool] = False):
 
     records_query = build_timeline_data_query(db, start_date, end_date, pod_id, location, 
                                               L1_conf_thresh, L2_conf_thresh, species_only)
