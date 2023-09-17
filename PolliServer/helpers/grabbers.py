@@ -29,6 +29,7 @@ async def grab_swarm_status(db: AsyncSession):
         - last_L2_class
         - total_specimens
         - last_specimen_created_time
+        - last_seen
     '''
     try:
         # Calculate the cutoff time for last_seen
@@ -52,10 +53,11 @@ async def grab_swarm_status(db: AsyncSession):
                 'loc_lon': record.longitude,
                 'queue_length': record.queue_length,
                 'total_frames': record.total_frames,
-                'last_L1_class': record.last_L1_class,
-                'last_L2_class': record.last_L2_class,
+                'last_S1_class': record.last_S1_class,
+                'last_S2_class': record.last_S2_class,
                 'total_specimens': record.total_specimens,
-                'last_specimen_created_time': record.last_specimen_created_time.strftime(DATETIME_FORMAT_STRING) if record.last_specimen_created_time else None
+                'last_specimen_created_time': record.last_specimen_created_time.strftime(DATETIME_FORMAT_STRING) if record.last_specimen_created_time else None,
+                'last_seen': record.last_seen.strftime(DATETIME_FORMAT_STRING) if record.last_seen else None
             }
             swarm_status.append(pod_status)  # Append each status object to the list
 

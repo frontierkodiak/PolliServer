@@ -31,10 +31,10 @@ class PodRecord(Base):
     last_seen = Column(DateTime)
     queue_length = Column(Integer)
     total_frames = Column(Integer)
-    last_L1_class = Column(String(64))
-    last_L2_class = Column(String(64))
-    # last_N_L1_classes = Column(String(1024))  # Stored as comma-separated string. Consider using a related table.
-    # last_N_L2_classes = Column(String(1024))  # Stored as comma-separated string. Consider using a related table.
+    last_S1_class = Column(String(64))
+    last_S2_class = Column(String(64))
+    # last_N_S1_classes = Column(String(1024))  # Stored as comma-separated string. Consider using a related table.
+    # last_N_S2_classes = Column(String(1024))  # Stored as comma-separated string. Consider using a related table.
     total_specimens = Column(Integer)
     last_specimen_created_time = Column(DateTime)
     
@@ -95,8 +95,8 @@ class PodRecord(Base):
     
     # PodOS metadata
     pod_name = Column(String(64), index=True)
-    firmware_name = Column(String(64))
-    firmware_version = Column(String(64))
+    pod_firmware_name = Column(String(64))
+    pod_firmware_version = Column(String(64))
 
     
 class SpecimenRecord(Base):
@@ -160,9 +160,15 @@ class SpecimenRecord(Base):
     swarm_name = Column(String(64), index=True)
     
     ## Location
-    lat = Column(Float, index=True)
-    lon = Column(Float, index=True)
+    latitude = Column(Float, index=True)
+    longitude = Column(Float, index=True)
     loc_name = Column(String(64), index=True)
+    
+    ## PolliOS metadata
+    polliOS_version = Column(String(64))
+    
+    # Sensor metadata
+    sensorRecord_id = Column(Integer) # FUTURE: Associate specimen with sensor record.
 
 
 class FrameRecord(Base):
@@ -180,8 +186,8 @@ class FrameRecord(Base):
     run_name = Column(String(64), index=True)
     podID = Column(String(64), index=True)
     swarm_name = Column(String(64), index=True)
-    lat = Column(Float, index=True)
-    lon = Column(Float, index=True)
+    latitude = Column(Float, index=True)
+    longitude = Column(Float, index=True)
     loc_name = Column(String(64), index=True)
     processed = Column(Boolean, index=True)
     queued = Column(Boolean, index=True)
