@@ -117,6 +117,7 @@ class SpecimenRecord(Base):
     S2_tag = Column(String(64), index=True)
     S2_taxonID = Column(String(64), index=True)
     S2_taxonID_str = Column(String(255), index=True)
+    S2_taxonID_common_str = Column(String(255), index=True)
     S2_taxonID_score = Column(Float, index=True)
     S2_taxonRank = Column(String(64), index=True)
     
@@ -210,3 +211,10 @@ class SensorRecord(Base):
     battery_level = Column(Float, index=True)
     # RSSI
     rssi = Column(Float, index=True)
+
+class FrameLog(Base):
+    __tablename__ = 'frame_log'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, index=True)
+    podID = Column(String(64), index=True)
