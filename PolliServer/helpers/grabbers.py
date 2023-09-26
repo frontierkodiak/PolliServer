@@ -1,5 +1,6 @@
 # PolliOS/PolliServer/helpers/grabbers.py
 import datetime
+from sqlalchemy import and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Optional, List
@@ -8,6 +9,7 @@ import traceback
 from PolliServer.constants import *
 from models.models import SpecimenRecord, PodRecord
 from PolliServer.logger.logger import LoggerSingleton
+from PolliServer.helpers.getters import get_frame_counts, get_recent_location
 
 logger = LoggerSingleton().get_logger()
 
@@ -72,16 +74,21 @@ async def grab_swarm_status(db: AsyncSession):
             else:
                 time_since_last_specimen = 0
 
+            # Get the total frames for this podID using the get_frame_counts function
+            total_frames = await get_frame_counts(db, record.name, 24)
+            
+            location = await get_recent_location(db, record.name)
+
             pod_status = {
                 'podID': record.name,
                 'connection_status': record.connection_status,
                 'rssi': record.rssi,
                 'stream_type': record.stream_type,
                 'loc_name': record.location_name,
-                'loc_lat': record.latitude,
-                'loc_lon': record.longitude,
+                'loc_lat': location['latitude'] if location else None,
+                'loc_lon': location['longitude'] if location else None,
                 'queue_length': record.queue_length,
-                'total_frames': record.total_frames,
+                'total_frames': total_frames, # total_frames, record.total_frames  # Use the total frames obtained from the get_frame_counts function
                 'last_S1_class': record.last_S1_class,
                 'last_S2_class': record.last_S2_class,
                 'total_specimens': record.total_specimens,
@@ -99,39 +106,48 @@ async def grab_swarm_status(db: AsyncSession):
         # Re-raise the exception so that the calling function can catch it
         raise e
 
-
-def build_timeline_data_query(db_session, start_date=None, end_date=None, podID=None, location=None, 
+def build_timeline_data_query(start_date=None, end_date=None, podID=None, location=None, 
                              S1_score_thresh=0.0, S2_score_thresh=0.0, S2a_score_thresh=0.0, species_only=False):
 
-    query = db_session.query(SpecimenRecord)
+    # Subquery to get S2_taxonIDs that appear at least 5 times
+    subquery = select(SpecimenRecord.S2_taxonID).group_by(SpecimenRecord.S2_taxonID).having(func.count(SpecimenRecord.S2_taxonID) >= 25)
+
+    stmt = select(SpecimenRecord)
+
+    conditions = []
 
     if start_date and end_date:
-        start_datetime = datetime.strptime(start_date, DATETIME_FORMAT_STRING)
-        end_datetime = datetime.strptime(end_date, DATETIME_FORMAT_STRING)
-        query = query.filter(SpecimenRecord.timestamp.between(start_datetime, end_datetime))
+        start_datetime = datetime.datetime.strptime(start_date, DATE_FORMAT_STRING)
+        end_datetime = datetime.datetime.strptime(end_date, DATE_FORMAT_STRING)
+        conditions.append(SpecimenRecord.timestamp.between(start_datetime, end_datetime))
     
     if podID:
-        query = query.filter(SpecimenRecord.podID.in_(podID))
+        conditions.append(SpecimenRecord.podID.in_(podID))
     
     if location:
-        query = query.filter(SpecimenRecord.loc_name == location)
+        conditions.append(SpecimenRecord.loc_name == location)
     
     if S1_score_thresh > 0.0:
-        query = query.filter(SpecimenRecord.S1_score >= S1_score_thresh)
+        conditions.append(SpecimenRecord.S1_score >= S1_score_thresh)
     
     if S2_score_thresh > 0.0:
-        query = query.filter(SpecimenRecord.S2_taxonID_score >= S2_score_thresh)
+        conditions.append(SpecimenRecord.S2_taxonID_score >= S2_score_thresh)
         
     if S2a_score_thresh > 0.0:
-        query = query.filter(SpecimenRecord.S2a_score >= S2a_score_thresh)
+        conditions.append(SpecimenRecord.S2a_score >= S2a_score_thresh)
     
     if species_only:
-        query = query.filter(SpecimenRecord.S2_taxonRank == 'L10')
+        conditions.append(SpecimenRecord.S2_taxonRank == 'L10')
+
+    # Add condition to filter S2_taxonID by subquery
+    conditions.append(SpecimenRecord.S2_taxonID.in_(subquery))
+
+    stmt = stmt.where(and_(*conditions))
 
     # Limiting the results as before
-    query = query.limit(5000)
+    stmt = stmt.limit(5000)
     
-    return query
+    return stmt
 
 async def grab_timeline_data(db: AsyncSession,
                              start_date: Optional[str] = None,
@@ -144,10 +160,11 @@ async def grab_timeline_data(db: AsyncSession,
                              S2a_score_thresh: Optional[float] = 0.0,
                              incl_images: Optional[bool] = False):
 
-    records_query = build_timeline_data_query(db, start_date, end_date, podID, location, 
+    records_query = build_timeline_data_query(start_date, end_date, podID, location, 
                                               S1_score_thresh, S2_score_thresh, S2a_score_thresh, species_only)
     
-    records = records_query.all()
+    result = await db.execute(records_query)
+    records = result.scalars().all()
 
     # Handling images is still left as a placeholder. You'll have to add your logic here.
     if incl_images:
