@@ -1,4 +1,7 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -10,28 +13,13 @@
             "justMyCode": true
         },
         {
-            "name": "start_server",
+            "name": "Python: start_PolliServer",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/start_server.py",
-            "args": ["--config", "configs/backend.yml"],  // Added this line
+            "args": ["--config", "/home/caleb/repo/PolliServer/configs/backend.yml"],
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
-            }        
-        },
-        {
-            "name": "tester",
-            "type": "python",
-            "request": "launch",
-            "program": "/home/caleb/repo/PolliServer/PolliServer/tester.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "cwd": "/home/caleb/repo/PolliServer/PolliServer",  // Sets the working directory to where the script is located
-            "env": {
-                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
-            }
+            "justMyCode": true
         }
     ]
 }

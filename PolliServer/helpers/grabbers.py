@@ -191,3 +191,59 @@ async def grab_timeline_data(db: AsyncSession,
         timeline_data.append(record_dict)
     
     return timeline_data
+
+
+
+async def grab_clade_activity_array_data(db: AsyncSession, clade: str, start_date: str, end_date: str, taxonRank: int, S1_score_thresh: float, S2_score_thresh: float, S2a_score_thresh: float, n_bins: int):
+    # Convert start_date and end_date to datetime objects
+    start_datetime = datetime.strptime(start_date, DATETIME_FORMAT_STRING)
+    end_datetime = datetime.strptime(end_date, DATETIME_FORMAT_STRING)
+
+    # Calculate the time difference between start_date and end_date
+    time_diff = end_datetime - start_datetime
+
+    # Calculate the time interval for each bin
+    bin_interval = time_diff / n_bins
+
+    # Initialize the array to store the results
+    activity_array = []
+
+    # Determine the taxonID_str column to use based on the clade
+    if clade == 'Species':
+        taxonID_str_column = SpecimenRecord.L10_taxonID_str
+    elif clade == 'Genus':
+        taxonID_str_column = SpecimenRecord.L20_taxonID_str
+    # Add more elif statements for other clade values...
+
+    # Loop over each bin
+    for i in range(n_bins):
+        # Calculate the start and end time for the current bin
+        bin_start_time = start_datetime + i * bin_interval
+        bin_end_time = bin_start_time + bin_interval
+
+        # Build the query
+        query = db.query(taxonID_str_column, func.count(taxonID_str_column)).filter(SpecimenRecord.timestamp.between(bin_start_time, bin_end_time))
+
+        # Apply the score thresholds
+        query = query.filter(SpecimenRecord.S1_score >= S1_score_thresh)
+        query = query.filter(SpecimenRecord.S2_taxonID_score >= S2_score_thresh)
+        query = query.filter(SpecimenRecord.S2a_score >= S2a_score_thresh)
+
+        # Group by the taxonID_str column and order by the count
+        query = query.group_by(taxonID_str_column).order_by(func.count(taxonID_str_column).desc())
+
+        # Execute the query and get the results
+        results = query.all()
+
+        # Calculate the midpoint of the time bin
+        bin_midpoint = bin_start_time + bin_interval / 2
+
+        # Loop over the results and append a dictionary to the activity_array for each one
+        for taxonID_str, count in results:
+            activity_array.append({
+                'time_bin_midpoint': bin_midpoint.strftime(DATETIME_FORMAT_STRING),
+                'taxonID_str': taxonID_str,
+                'count': count
+            })
+
+    return activity_array
