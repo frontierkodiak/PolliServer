@@ -159,3 +159,21 @@ async def timeline_data(start_date: Optional[str] = Query(None),
         logger.server_error(f"Error in timeline_data endpoint: {e}")
         traceback.print_exc()  # This will print the traceback to the console.
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/clade-activity-array-data")
+async def clade_activity_array_data(clade: str,
+                                    start_date: Optional[str] = Query(None),
+                                    end_date: Optional[str] = Query(None),
+                                    taxonRank: Optional[int] = Query(10),
+                                    S1_score_thresh: Optional[float] = Query(0.0),
+                                    S2_score_thresh: Optional[float] = Query(0.0),
+                                    S2a_score_thresh: Optional[float] = Query(0.0),
+                                    n_bins: Optional[int] = Query(10),
+                                    db: AsyncSession = Depends(get_db)):
+    try:
+        return await grab_clade_activity_array_data(db, clade, start_date, end_date, taxonRank, S1_score_thresh, S2_score_thresh, S2a_score_thresh, n_bins)
+    except Exception as e:
+        logger.server_error(f"Error in clade_activity_array_data endpoint: {e}")
+        traceback.print_exc()  # This will print the traceback to the console.
+        raise HTTPException(status_code=500, detail="Internal server error")
