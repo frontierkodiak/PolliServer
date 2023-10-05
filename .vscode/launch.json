@@ -5,21 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
-            "name": "Python: start_PolliServer",
+            "name": "start_server",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/start_server.py",
-            "args": ["--config", "/home/caleb/repo/PolliServer/configs/backend.yml"],
+            "args": ["--config", "configs/backend.yml"],  // Added this line
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
+            }        
         }
     ]
 }

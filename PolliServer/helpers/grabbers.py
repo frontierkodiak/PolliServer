@@ -81,6 +81,7 @@ async def grab_swarm_status(db: AsyncSession):
 
             pod_status = {
                 'podID': record.name,
+                'pod_address': record.address,
                 'connection_status': record.connection_status,
                 'rssi': record.rssi,
                 'stream_type': record.stream_type,
