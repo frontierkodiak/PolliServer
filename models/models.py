@@ -109,6 +109,7 @@ class SpecimenRecord(Base):
     bboxLL_y = Column(Integer)
     bboxUR_x = Column(Integer)
     bboxUR_y = Column(Integer)
+    bbox_rel_area = Column(Float, index=True)
     S1_score = Column(Float, index=True)
     S1_tag = Column(String(64), index=True)
     S1_class = Column(String(255))
@@ -146,8 +147,12 @@ class SpecimenRecord(Base):
     S2a_score = Column(Float, index=True)
     S2a_tag = Column(String(64), index=True)
     
+    ## Task details
+    target = Column(String(64), index=True)
+    polli_mode = Column(String(64), index=True)
+    
     ## Media
-    mediaID = Column(String(255))
+    mediaID = Column(String(255), index=True)
     mediaPath = Column(String(255))
     mediaType = Column(String(64))
     height_px = Column(Integer)
@@ -178,8 +183,10 @@ class FrameRecord(Base):
     __tablename__ = 'frame_records'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    mediaID = Column(String(255))
+    mediaID = Column(String(255), index=True)
     mediaType = Column(String(64))
+    target = Column(String(64), index=True)
+    polli_mode = Column(String(64), index=True)
     height_px = Column(Integer)
     width_px = Column(Integer)
     persist_policy = Column(String(64))
@@ -218,3 +225,63 @@ class FrameLog(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp = Column(DateTime, index=True)
     podID = Column(String(64), index=True)
+    
+class PollinationRecord(Base):
+    __tablename__ = 'pollination_records'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, index=True)
+    run_name = Column(String(64), index=True)
+    swarm_name = Column(String(64), index=True)
+    polli_mode = Column(String(64), index=True)
+    
+    # Event model meta
+    S3_tag = Column(String(64), index=True)
+    # Pipeline (Brain) meta
+    brain_tag = Column(String(64), index=True)
+    brain_arch = Column(String(64), index=True)
+    brain_event_descriptor = Column(String(64), index=True)
+    brain_type = Column(String(64))
+    
+    # Event details
+    joint_bbox_overlap = Column(Float, index=True)
+    
+    # Specimen details
+    ## Poll
+    specimen_record_id_poll = Column(Integer, ForeignKey('specimen_record.id'))
+    S2_taxonID_poll = Column(String(64), index=True) # These are supposed to be int. FUTURE: Reformat these in MySQL, inc. for SpecimenRecord.
+    S2_taxonID_str_poll = Column(String(255), index=True)
+    S2_taxonID_score_poll = Column(Float, index=True)
+    S2_taxonRank_poll = Column(String(64), index=True) # Also supposed to be int.
+    ## Plant
+    specimen_record_id_plant = Column(Integer, ForeignKey('specimen_record.id'))
+    S2_taxonID_plant = Column(String(64), index=True)
+    S2_taxonID_str_plant = Column(String(255), index=True)
+    S2_taxonID_score_plant = Column(Float, index=True)
+    S2_taxonRank_plant = Column(String(64), index=True)
+    
+class WeatherRecord(Base):
+    __tablename__ = 'weather_records'
+
+    id = Column(Integer, primary_key=True)
+    swarm_name = Column(String(64), index=True)
+    run_name = Column(String(64), index=True)
+    latitude = Column(Float, index=True)
+    longitude = Column(Float, index=True)
+    owm_city_id = Column(Integer, index=True)
+    loc_name = Column(String(128), index=True)
+    timestamp = Column(DateTime, index=True)
+    cloud_coverage = Column(Integer)
+    rain_last_3h = Column(Float)
+    wind_degree = Column(Float)
+    wind_speed = Column(Float)
+    humidity = Column(Integer)
+    pressure = Column(Integer)
+    temperature = Column(Float)
+    snow_last_3h = Column(Float)
+    sunrise_time = Column(DateTime)
+    sunset_time = Column(DateTime)
+    status = Column(String(64))
+    detailed_status = Column(String(255))
+    owm_code = Column(String(64))
+    owm_icon_name = Column(String(64))
+    owm_icon_url = Column(String(255))
