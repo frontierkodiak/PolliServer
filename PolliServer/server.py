@@ -34,15 +34,6 @@ app.add_middleware(
 
 # --- Minor (getter) API endpoints --- #
 
-# Async endpoint to serve the favicon.ico file
-@app.get("/favicon.ico")
-async def get_favicon():
-    '''
-    Returns:
-        FileResponse: Favicon file to be served
-    '''
-    return FileResponse("assets/favicons/Polli_Dandelion_v1.0_trans.png")
-
 @app.get("/podIDs")
 async def get_pod_ids(db: AsyncSession = Depends(get_db)):
     try:
