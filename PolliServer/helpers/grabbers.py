@@ -77,7 +77,8 @@ async def grab_swarm_status(db: AsyncSession):
                 time_since_last_specimen = 0
 
             # Get the total frames for this podID using the get_frame_counts function
-            total_frames = await get_frame_counts(db, record.name, 24)
+            total_frames_dict = await get_frame_counts(db, hours=24, podID=record.name, compare=False)
+            total_frames = total_frames_dict['current']
             
             location = await get_recent_location(db, record.name)
 

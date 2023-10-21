@@ -9,12 +9,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import traceback
+import datetime
 
 
 from PolliServer.constants import *
 from PolliServer.backend.get_db import get_db
 from PolliServer.helpers.grabbers import *
-from PolliServer.helpers.getters import get_frame_counts
+from PolliServer.helpers.getters import get_frame_counts, get_specimen_counts
 from models.models import SpecimenRecord
 from PolliServer.logger.logger import LoggerSingleton
 
@@ -30,6 +31,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+time = datetime.datetime.now()
+print(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 
 # --- Minor (getter) API endpoints --- #
@@ -118,7 +122,7 @@ async def frame_counts_endpoint(podIDs: Optional[List[str]] = Query(None),
 # --- Major (grabber) API endpoints --- #
 
 # Returns a swarm_status JSON swarm_status list
-@app.get("/api/swarm-status")
+@app.get("/swarm-status")
 async def swarm_status(db: AsyncSession = Depends(get_db)):
     try:
         return await grab_swarm_status(db)
@@ -128,7 +132,7 @@ async def swarm_status(db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/timeline-data")
+@app.get("/timeline-data")
 async def timeline_data(start_date: Optional[str] = Query(None),
                         end_date: Optional[str] = Query(None),
                         podID: Optional[List[str]] = Query(None),
@@ -152,7 +156,7 @@ async def timeline_data(start_date: Optional[str] = Query(None),
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/clade-activity-array-data")
+@app.get("/clade-activity-array-data")
 async def clade_activity_array_data(clade: str,
                                     start_date: Optional[str] = Query(None),
                                     end_date: Optional[str] = Query(None),
@@ -168,3 +172,28 @@ async def clade_activity_array_data(clade: str,
         logger.server_error(f"Error in clade_activity_array_data endpoint: {e}")
         traceback.print_exc()  # This will print the traceback to the console.
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+    
+@app.get("/swarm-stats")
+async def swarm_stats(podID: Optional[str] = Query(None), db: AsyncSession = Depends(get_db)):
+    print("swarm_stats")
+    try:
+        # Initialize an empty dictionary to store the results
+        results = {'podID': podID, 'frames': {}, 'specimens': {}}
+
+        # Get the frame counts for the 24 and 72 hour spans
+        for hours in [24, 72]:
+            frame_counts = await get_frame_counts(db, hours, podID, compare=True)
+            results['frames'][f'{hours}_hours'] = frame_counts
+
+        # Get the specimen counts for the 24 and 72 hour spans
+        for hours in [24, 72]:
+            specimen_counts = await get_specimen_counts(db, hours, podID, compare=True)
+            results['specimens'][f'{hours}_hours'] = specimen_counts
+
+        # Return the results
+        return results
+    except SQLAlchemyError as e:
+        logger.server_error(f"Getter /api/swarm-stats SQLAlchemyError: {e}")
+        print(f"Getter /api/swarm-stats SQLAlchemyError: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
