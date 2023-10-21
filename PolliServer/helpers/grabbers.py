@@ -19,6 +19,7 @@ async def grab_swarm_status(db: AsyncSession):
     Get swarm status from PodRecord MySQL database records.
     Returns JSON swarm_status list with the following object values:
         - podID
+        - podOS_version
         - connection_status
         - stream_type
         - loc_name
@@ -45,6 +46,7 @@ async def grab_swarm_status(db: AsyncSession):
         if not records:  # If there are no records, return a list with a single status object with all fields as None
             return [{
                 'podID': None,
+                'podOS_version': None,
                 'connection_status': None,
                 'rssi': None,
                 'stream_type': None,
@@ -81,6 +83,7 @@ async def grab_swarm_status(db: AsyncSession):
 
             pod_status = {
                 'podID': record.name,
+                'podOS_version': record.pod_firmware_version,
                 'pod_address': record.address,
                 'connection_status': record.connection_status,
                 'rssi': record.rssi,
@@ -88,7 +91,6 @@ async def grab_swarm_status(db: AsyncSession):
                 'loc_name': record.location_name,
                 'loc_lat': location['latitude'] if location else None,
                 'loc_lon': location['longitude'] if location else None,
-                'queue_length': record.queue_length,
                 'total_frames': total_frames, # total_frames, record.total_frames  # Use the total frames obtained from the get_frame_counts function
                 'last_S1_class': record.last_S1_class,
                 'last_S2_class': record.last_S2_class,
