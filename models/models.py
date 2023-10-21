@@ -11,7 +11,7 @@ class PodRecord(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(64), index=True)
     # type = Column(String(64), index=True)
-    address = Column(String(64))
+    address = Column(String(64), index=True)
     address_type = Column(String(64))
     swarm_name = Column(String(64), index=True)
     retry_connection_period = Column(Integer)
@@ -112,7 +112,7 @@ class SpecimenRecord(Base):
     bbox_rel_area = Column(Float, index=True)
     S1_score = Column(Float, index=True)
     S1_tag = Column(String(64), index=True)
-    S1_class = Column(String(255))
+    S1_class = Column(String(255), index=True)
 
     ## Stage 2: (classification)
     S2_tag = Column(String(64), index=True)
@@ -197,6 +197,7 @@ class FrameRecord(Base):
     latitude = Column(Float, index=True)
     longitude = Column(Float, index=True)
     loc_name = Column(String(64), index=True)
+    synced = Column(Boolean, index=True)
     processed = Column(Boolean, index=True)
     queued = Column(Boolean, index=True)
 
@@ -207,17 +208,17 @@ class SensorRecord(Base):
     timestamp = Column(DateTime, index=True)
     podID = Column(String(64), index=True)
     # GPS
-    latitude = Column(Float, index=True)
-    longitude = Column(Float, index=True)
-    altitude = Column(Float, index=True)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    altitude = Column(Float)
     # BME280
-    temperature = Column(Float, index=True)
-    humidity = Column(Float, index=True)
-    pressure = Column(Float, index=True)
+    temperature = Column(Float)
+    humidity = Column(Float)
+    pressure = Column(Float)
     # Battery
-    battery_level = Column(Float, index=True)
+    battery_level = Column(Float)
     # RSSI
-    rssi = Column(Float, index=True)
+    rssi = Column(Float)
 
 class FrameLog(Base):
     __tablename__ = 'frame_log'
@@ -252,12 +253,20 @@ class PollinationRecord(Base):
     S2_taxonID_str_poll = Column(String(255), index=True)
     S2_taxonID_score_poll = Column(Float, index=True)
     S2_taxonRank_poll = Column(String(64), index=True) # Also supposed to be int.
+    L10_taxonID_str_poll = Column(String(255))
+    L20_taxonID_str_poll = Column(String(255))
+    L30_taxonID_str_poll = Column(String(255))
+    L40_taxonID_str_poll = Column(String(255))
     ## Plant
     specimen_record_id_plant = Column(Integer, ForeignKey('specimen_record.id'))
     S2_taxonID_plant = Column(String(64), index=True)
     S2_taxonID_str_plant = Column(String(255), index=True)
     S2_taxonID_score_plant = Column(Float, index=True)
     S2_taxonRank_plant = Column(String(64), index=True)
+    L10_taxonID_str_plant = Column(String(255))
+    L20_taxonID_str_plant = Column(String(255))
+    L30_taxonID_str_plant = Column(String(255))
+    L40_taxonID_str_plant = Column(String(255))
     
 class WeatherRecord(Base):
     __tablename__ = 'weather_records'
@@ -274,7 +283,9 @@ class WeatherRecord(Base):
     rain_last_3h = Column(Float)
     wind_degree = Column(Float)
     wind_speed = Column(Float)
+    # wind_gust = Column(Float) # New. Non-OWM.
     humidity = Column(Integer)
+    # par_light = Column(Float) # New. Non-OWM. uM/m^2s
     pressure = Column(Integer)
     temperature = Column(Float)
     snow_last_3h = Column(Float)
