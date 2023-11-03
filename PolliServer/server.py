@@ -45,7 +45,8 @@ async def get_pod_ids(db: AsyncSession = Depends(get_db)):
         values_list = [item for item in values.scalars().all()]
         return sorted(values_list)
     except SQLAlchemyError as e:
-        logger.server_error(f"Getter /pod_ids SQLAlchemyError: {e}")
+        logger.server_error(f"Getter /podIDs SQLAlchemyError: {e}")
+        print(f"Getter /podIDs SQLAlchemyError: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # @app.get("/locations")
