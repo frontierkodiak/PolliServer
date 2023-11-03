@@ -1,5 +1,6 @@
 # PolliServer/helpers/getters.py
 from datetime import datetime, timedelta
+from typing import Dict
 from sqlalchemy import select, and_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.models import FrameLog, SensorRecord, SpecimenRecord
@@ -30,8 +31,11 @@ async def get_frame_counts(db: AsyncSession, hours: int = 24, podID: str = None,
         previous_result = await db.execute(previous_query)
         previous_count = previous_result.scalar_one()
 
-        # Return the counts for the current and previous periods, and the span
-        return {'current': current_count, 'previous': previous_count, 'span': hours}
+        # Calculate the percent difference
+        diff = ((current_count - previous_count) / previous_count) * 100 if previous_count else 0
+
+        # Return the counts for the current and previous periods, the span, and the percent difference
+        return {'current': current_count, 'previous': previous_count, 'span': hours, 'diff': diff}
 
     # If not comparing, return the count for the current period and the span
     return {'current': current_count, 'span': hours}
@@ -71,8 +75,11 @@ async def get_specimen_counts(db: AsyncSession, hours: int, podID: str = None, s
         previous_result = await db.execute(previous_query)
         previous_count = previous_result.scalar_one()
 
-        # Return the counts for the current and previous periods, and the span
-        return {'current': current_count, 'previous': previous_count, 'span': hours}
+        # Calculate the percent difference
+        diff = ((current_count - previous_count) / previous_count) * 100 if previous_count else 0
+
+        # Return the counts for the current and previous periods, the span, and the percent difference
+        return {'current': current_count, 'previous': previous_count, 'span': hours, 'diff': diff}
 
     # If not comparing, return the count for the current period and the span
     return {'current': current_count, 'span': hours}
