@@ -1,6 +1,8 @@
 # PolliServer.server.py
 
 from typing import Optional, List
+from aiohttp import ClientSession, ClientTimeout
+from fastapi import HTTPException
 from fastapi import FastAPI, Query, Depends, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +37,22 @@ app.add_middleware(
 time = datetime.datetime.now()
 print(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
+# --- Minor (utility) API endpoints --- #
+
+@app.get("/check_hub_connection")
+async def check_hub_connection(hub_address: Optional[str] = "hub0"):
+    url = f"http://{hub_address}/"
+    timeout = ClientTimeout(total=5)  # 5 seconds timeout
+    async with ClientSession(timeout=timeout) as session:
+        try:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    return {"status": "online"}
+                else:
+                    return {"status": "offline"}
+        except Exception as e:
+            logger.server_error(f"Error in check_hub_connection endpoint: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
 
 # --- Minor (getter) API endpoints --- #
 
