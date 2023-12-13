@@ -216,3 +216,12 @@ async def swarm_stats(podID: Optional[str] = Query(None), db: AsyncSession = Dep
         logger.server_error(f"Getter /api/swarm-stats SQLAlchemyError: {e}")
         print(f"Getter /api/swarm-stats SQLAlchemyError: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+    
+#### --- Asset download endpoints --- ####
+
+@app.get("/models/{model_name}")
+async def download_model(model_name: str):
+    file_path = f"~/models/ts/{model_name}.gz"
+    return FileResponse(file_path, media_type="application/gzip", filename=f"{model_name}.gz")
