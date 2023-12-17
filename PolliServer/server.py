@@ -1,5 +1,7 @@
 # PolliServer.server.py
-
+import os
+import signal
+import subprocess
 from typing import Optional, List
 from aiohttp import ClientSession, ClientTimeout
 from fastapi import HTTPException
@@ -36,6 +38,24 @@ app.add_middleware(
 
 time = datetime.datetime.now()
 print(f"Server started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+# --- Management API endpoints --- #
+
+@app.get("/shutdown")
+async def shutdown_server():
+    os.kill(os.getpid(), signal.SIGINT)
+    return {"message": "Server shutting down"}
+
+@app.get("/restart")
+async def restart_server():
+    os.kill(os.getpid(), signal.SIGHUP)
+    return {"message": "Server restarting"}
+
+@app.get("/debug")
+async def set_debug_mode():
+    os.environ["DEBUG"] = "true"
+    os.kill(os.getpid(), signal.SIGHUP)
+    return {"message": "Debug mode set and server restarting"}
 
 # --- Minor (utility) API endpoints --- #
 
@@ -221,7 +241,21 @@ async def swarm_stats(podID: Optional[str] = Query(None), db: AsyncSession = Dep
     
 #### --- Asset download endpoints --- ####
 
-@app.get("/models/{model_name}")
-async def download_model(model_name: str):
-    file_path = f"~/models/ts/{model_name}.gz"
+@app.get("/models/{framework}/{model_name}")
+async def download_model(model_name: str, framework: str):
+    file_path = ""
+    if framework == "torchserve":
+        file_path = f"/models/ts/{model_name}.gz"
+    elif framework == "onnx":
+        file_path = f"/models/onnx/{model_name}.gz"
+    elif framework == "tensorflow":
+        file_path = f"/models/tf/{model_name}.gz"
+    elif framework == "pkl":
+        file_path = f"/models/pkl/{model_name}.gz"
     return FileResponse(file_path, media_type="application/gzip", filename=f"{model_name}.gz")
+
+
+@app.get("/assets/{asset_name}")
+async def download_asset(asset_name: str):
+    file_path = f"/assets/{asset_name}.gz"
+    return FileResponse(file_path, media_type="application/gzip", filename=f"{asset_name}.gz")
