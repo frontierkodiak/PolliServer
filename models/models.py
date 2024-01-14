@@ -176,10 +176,15 @@ class SpecimenRecord(Base):
     # Sensor metadata
     sensorRecord_id = Column(Integer) # FUTURE: Associate specimen with sensor record.
 
+class FrameLog(Base):
+    __tablename__ = 'frame_log'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, index=True)
+    camera_device = Column(String(128), index=True)
+    podID = Column(String(64), index=True)
 
 class FrameRecord(Base):
-    # NOTE: These are only used in PolliOS Lite. 
-    # Base PolliOS sticks to pure python FrameCard objects.
     __tablename__ = 'frame_records'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -191,11 +196,21 @@ class FrameRecord(Base):
     width_px = Column(Integer)
     persist_policy = Column(String(64))
     timestamp = Column(DateTime, index=True)
+    camera_device = Column(String(128), index=True)  # New column with index
+    camera_lens = Column(String(128))  # New column
+    camera_focal_length = Column(Float) # New column
+    camera_FoV = Column(Float, index=True) # New column
+    camera_aperture = Column(Float) # New column
+    camera_exposure = Column(Float)  # New column
+    camera_iso = Column(Float) # New column
+    camera_flash = Column(Boolean) # New column
+    camera_shutter_speed = Column(Float)  # New column
     run_name = Column(String(64), index=True)
     podID = Column(String(64), index=True)
     swarm_name = Column(String(64), index=True)
     latitude = Column(Float, index=True)
     longitude = Column(Float, index=True)
+    altitude = Column(Float)  # New column
     loc_name = Column(String(64), index=True)
     synced = Column(Boolean, index=True)
     processed = Column(Boolean, index=True)
@@ -219,13 +234,6 @@ class SensorRecord(Base):
     battery_level = Column(Float)
     # RSSI
     rssi = Column(Float)
-
-class FrameLog(Base):
-    __tablename__ = 'frame_log'
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime, index=True)
-    podID = Column(String(64), index=True)
     
 class PollinationRecord(Base):
     __tablename__ = 'pollination_records'
@@ -296,3 +304,14 @@ class WeatherRecord(Base):
     owm_code = Column(String(64))
     owm_icon_name = Column(String(64))
     owm_icon_url = Column(String(255))
+    # Air Pollution
+    aqi = Column(Float)
+    coi = Column(Float)
+    nh3i = Column(Float)
+    noi = Column(Float)
+    no2i = Column(Float)
+    o3i = Column(Float)
+    so2i = Column(Float)
+    pm2_5i = Column(Float)
+    pm10i = Column(Float)
+    uv_index = Column(Float)
