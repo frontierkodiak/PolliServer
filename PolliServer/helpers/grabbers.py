@@ -39,7 +39,7 @@ async def grab_swarm_status(db: AsyncSession):
 
         # Query records from PodRecord table that have a last_seen time greater than the cutoff time
         # Use select() and await for asynchronous query
-        stmt = select(PodRecord).filter(PodRecord.last_seen > cutoff_time)
+        stmt = select(PodRecord).filter(PodRecord.last_seen_time > cutoff_time)
         result = await db.execute(stmt)
         records = result.scalars().all()
 
@@ -67,8 +67,8 @@ async def grab_swarm_status(db: AsyncSession):
         swarm_status = []  # Initialize as a list
         for record in records:
             
-            if record.last_seen:
-                time_since_last_seen = datetime.datetime.utcnow() - record.last_seen
+            if record.last_seen_time:
+                time_since_last_seen = datetime.datetime.utcnow() - record.last_seen_time
             else:
                 time_since_last_seen = 0
             if record.last_specimen_created_time:
@@ -97,8 +97,8 @@ async def grab_swarm_status(db: AsyncSession):
                 'last_S2_class': record.last_S2_class,
                 'total_specimens': record.total_specimens,
                 'last_specimen_created_time': record.last_specimen_created_time.strftime(DATETIME_FORMAT_STRING) if record.last_specimen_created_time else None,
-                'last_seen': record.last_seen.strftime(DATETIME_FORMAT_STRING) if record.last_seen else None,
-                'time_since_last_seen': time_since_last_seen.total_seconds() / 60.0 if record.last_seen else None,
+                'last_seen': record.last_seen_time.strftime(DATETIME_FORMAT_STRING) if record.last_seen_time else None,
+                'time_since_last_seen': time_since_last_seen.total_seconds() / 60.0 if record.last_seen_time else None,
                 'time_since_last_specimen': time_since_last_specimen.total_seconds() / 60.0 if record.last_specimen_created_time else None
             }
             swarm_status.append(pod_status)  # Append each status object to the list

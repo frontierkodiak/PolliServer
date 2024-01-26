@@ -33,8 +33,8 @@ async def grab_swarm_status(db: Session):
         # Calculate the cutoff time for last_seen
         cutoff_time = datetime.datetime.utcnow() - datetime.timedelta(minutes=LAST_SEEN_THRESHOLD_MINUTES)
 
-        # Query records from PodRecord table that have a last_seen time greater than the cutoff time
-        records = db.query(PodRecord).filter(PodRecord.last_seen > cutoff_time).all()
+        # Query records from PodRecord table that have a last_seen_time time greater than the cutoff time
+        records = db.query(PodRecord).filter(PodRecord.last_seen_time > cutoff_time).all()
 
         swarm_status = []  # Initialize as a list
         for record in records:

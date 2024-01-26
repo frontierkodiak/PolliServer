@@ -28,7 +28,8 @@ class PodRecord(Base):
     
     # Pod status
     connection_status = Column(String(64), index=True)
-    last_seen = Column(DateTime)
+    last_seen_time = Column(DateTime)
+    last_frame_time = Column(DateTime)
     queue_length = Column(Integer)
     total_frames = Column(Integer)
     last_S1_class = Column(String(64))
