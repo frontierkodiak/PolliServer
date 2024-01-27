@@ -76,11 +76,22 @@ async def check_hub_connection(hub_address: Optional[str] = "hub0"):
 
 # --- Minor (getter) API endpoints --- #
 
+# @app.get("/podIDs")
+# async def get_pod_ids(db: AsyncSession = Depends(get_db)):
+#     try:
+#         values = await db.execute(select(SpecimenRecord.podID).distinct())
+#         values_list = [item for item in values.scalars().all()]
+#         return sorted(values_list)
+#     except SQLAlchemyError as e:
+#         logger.server_error(f"Getter /podIDs SQLAlchemyError: {e}")
+#         print(f"Getter /podIDs SQLAlchemyError: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/podIDs")
 async def get_pod_ids(db: AsyncSession = Depends(get_db)):
     try:
         values = await db.execute(select(SpecimenRecord.podID).distinct())
-        values_list = [item for item in values.scalars().all()]
+        values_list = [item for item in values.scalars().all() if item is not None]
         return sorted(values_list)
     except SQLAlchemyError as e:
         logger.server_error(f"Getter /podIDs SQLAlchemyError: {e}")

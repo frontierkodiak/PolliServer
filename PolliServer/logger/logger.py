@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from datetime import datetime
 from threading import Timer
 
@@ -11,6 +12,21 @@ class LoggerSingleton:
         if cls._instance is None:
             cls._instance = Logger(log_dir, run_name, log_buffer)
         return cls._instance
+    
+class StreamWriter:
+    def __init__(self, buffer, log_file):
+        if log_file is None:
+            raise ValueError("Logger.StreamWriter: stdout/stderr log_file must be provided")
+        self.buffer = buffer
+        self.log_file = log_file
+
+    def write(self, message):
+        self.buffer.append(message)
+
+    def flush(self):
+        with open(self.log_file, 'a') as file:
+            file.writelines(self.buffer)
+        self.buffer.clear()
 
 
 class Logger:
@@ -28,12 +44,19 @@ class Logger:
 
         self.log_file = os.path.join(log_dir, f'{run_name}.log')
         self.profile_log_file = os.path.join(log_dir, f'{run_name}_profile.log')
+        self.stdout_log_file = os.path.join(log_dir, f'{run_name}_stdout.log')
+        self.stderr_log_file = os.path.join(log_dir, f'{run_name}_stderr.log')
         self.buffered_logs = []
         self.profile_buffered_logs = []
+        self.stdout_buffered_logs = []
+        self.stderr_buffered_logs = []
         self.buffer_limit = log_buffer  # Adjust as needed
 
         self.logger = logging.getLogger(run_name)
         self.logger.setLevel(logging.INFO)
+        
+        self.stdout_writer = StreamWriter(self.stdout_buffered_logs, self.stdout_log_file)
+        self.stderr_writer = StreamWriter(self.stderr_buffered_logs, self.stderr_log_file)
 
         file_handler = logging.FileHandler(self.log_file)
         formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
@@ -62,6 +85,12 @@ class Logger:
 
         self.flush_timer = Timer(5, self.flush_logs)
         self.flush_timer.start()
+        
+    def redirect_stdout(self):
+        sys.stdout = self.stdout_writer
+
+    def redirect_stderr(self):
+        sys.stderr = self.stderr_writer
 
     def info(self, message):
         self.buffered_logs.append(f'{datetime.now()} : INFO : {message}\n')
@@ -110,6 +139,15 @@ class Logger:
         with open(self.log_file, 'a') as log_file:
             log_file.writelines(self.buffered_logs)
         self.buffered_logs = []
+        
+        with open(self.stdout_log_file, 'a') as stdout_log_file:
+            stdout_log_file.writelines(self.stdout_buffered_logs)
+        self.stdout_buffered_logs = []
+
+        with open(self.stderr_log_file, 'a') as stderr_log_file:
+            stderr_log_file.writelines(self.stderr_buffered_logs)
+        self.stderr_buffered_logs = []
+        
         self.flush_timer = Timer(5, self.flush_logs)
         self.flush_timer.start()
         self.flush_profile_logs()
@@ -123,3 +161,17 @@ class Logger:
         with open(self.server_log_file, 'a') as server_log_file:
             server_log_file.writelines(self.server_buffered_logs)
         self.server_buffered_logs = []
+        
+    def close_logs(self):
+        # Called on program exit
+        self.flush_logs()
+        self.flush_profile_logs()
+        self.flush_server_logs()
+        self.logger.removeHandler(self.logger.handlers[0])
+        if self.profile_logger is not None:
+            self.profile_logger.removeHandler(self.profile_logger.handlers[0])
+        if self.server_logger is not None:
+            self.server_logger.removeHandler(self.server_logger.handlers[0])
+        self.logger = None
+        self.profile_logger = None
+        self.server_logger = None
