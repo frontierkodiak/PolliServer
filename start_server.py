@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import uvicorn
@@ -31,5 +32,13 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="Path to the configuration file")
+    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode")
     args = parser.parse_args()
+    
+    # Set an environment variable for debug mode
+    if args.debug:
+        os.environ["DEBUG_MODE"] = "true"
+    else:
+        os.environ["DEBUG_MODE"] = "false"
+    
     main(args.config)

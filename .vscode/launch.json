@@ -9,12 +9,24 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/start_server.py",
-            "args": ["--config", "/home/caleb/repo/configs/polliOS-serve/v0.2/configs/backend.yml"],  // Added this line
+            "args": ["--config", "/home/caleb/repo/configs/polliOS-serve/v0.2/configs/backend.yml"],
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
             }        
+        },
+        {
+            "name": "debug_server",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/start_server.py",
+            "args": ["--config", "/home/caleb/repo/configs/polliOS-serve/v0.2/configs/dev_backend.yml", "--debug"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "/home/caleb/repo/PolliServer:${workspaceFolder}/.venv/bin/python3"
+            }
         }
     ]
 }

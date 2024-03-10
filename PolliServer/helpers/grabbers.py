@@ -7,11 +7,68 @@ from typing import Optional, List
 import traceback
 
 from PolliServer.constants import *
-from models.models import SpecimenRecord, PodRecord
+from models.models import SpecimenRecord, PodRecord, FrameLog
 from PolliServer.logger.logger import LoggerSingleton
 from PolliServer.helpers.getters import get_frame_counts, get_recent_location
 
 logger = LoggerSingleton().get_logger()
+
+
+# NOTE: For @app.get("/frame-log-array-data") endpoint
+async def grab_frame_log_array_data(db: AsyncSession, span: int, n_bins: int, swarm_name: Optional[str] = None, run_name: Optional[str] = None):
+    # Convert span from hours to a timedelta
+    span_delta = datetime.timedelta(hours=span)
+    end_datetime = datetime.datetime.utcnow()
+    start_datetime = end_datetime - span_delta
+
+    # Calculate the time interval for each bin
+    bin_interval = span_delta / n_bins
+
+    # Initialize a list to hold the midpoint of each time bin
+    bin_midpoints = [start_datetime + (i * bin_interval) + (bin_interval / 2) for i in range(n_bins)]
+
+    # Query all unique podIDs within the span to pre-populate the structure
+    pod_ids_query = select(FrameLog.podID).distinct()
+    result = await db.execute(pod_ids_query)
+    all_podIDs = [row[0] for row in result.all()]
+
+    # Initialize a structure to hold the data for each podID for each time bin
+    frame_log_dict = {podID: {bin_midpoint.strftime(DATETIME_FORMAT_STRING): 0 for bin_midpoint in bin_midpoints} for podID in all_podIDs}
+
+    for i in range(n_bins):
+        # Calculate the start and end time for the current bin
+        bin_start_time = start_datetime + i * bin_interval
+        bin_end_time = bin_start_time + bin_interval
+
+        # Build the query to count frames and group by podID
+        query = select(FrameLog.podID, func.count(FrameLog.id)).\
+                filter(FrameLog.timestamp.between(bin_start_time, bin_end_time)).\
+                group_by(FrameLog.podID)
+                
+                # FUTURE: Add filters for swarm_name and run_name, if provided
+
+        # Execute the query
+        result = await db.execute(query)
+        frames_per_pod = result.all()
+
+        # Update the structure with actual counts
+        for podID, count in frames_per_pod:
+            frame_log_dict[podID][bin_midpoints[i].strftime(DATETIME_FORMAT_STRING)] = count
+
+    # Convert the dictionary to the list of objects expected by the frontend
+    final_data = []
+    for podID, bins in frame_log_dict.items():
+        for bin_midpoint, count in bins.items():
+            final_data.append({
+                "time_bin_midpoint": bin_midpoint,
+                "count": count,
+                "podID": podID
+            })
+
+    # Sort final_data by time_bin_midpoint
+    final_data_sorted = sorted(final_data, key=lambda x: datetime.datetime.strptime(x["time_bin_midpoint"], DATETIME_FORMAT_STRING))
+
+    return final_data_sorted
 
 
 async def grab_swarm_status(db: AsyncSession):
@@ -110,7 +167,8 @@ async def grab_swarm_status(db: AsyncSession):
         # Re-raise the exception so that the calling function can catch it
         raise e
 
-def build_timeline_data_query(start_date=None, end_date=None, podID=None, location=None, 
+# NOTE: for /specimen-detail-timeline endpoint
+def build_specimen_detail_timeline_query(start_date=None, end_date=None, podID=None, location=None, 
                              S1_score_thresh=0.0, S2_score_thresh=0.0, S2a_score_thresh=0.0, species_only=False):
 
     # Subquery to get S2_taxonIDs that appear at least 5 times
@@ -153,7 +211,7 @@ def build_timeline_data_query(start_date=None, end_date=None, podID=None, locati
     
     return stmt
 
-async def grab_timeline_data(db: AsyncSession,
+async def grab_specimen_detail_timeline(db: AsyncSession,
                              start_date: Optional[str] = None,
                              end_date: Optional[str] = None,
                              podID: Optional[List[str]] = None,
@@ -164,17 +222,17 @@ async def grab_timeline_data(db: AsyncSession,
                              S2a_score_thresh: Optional[float] = 0.0,
                              incl_images: Optional[bool] = False):
 
-    records_query = build_timeline_data_query(start_date, end_date, podID, location, 
+    records_query = build_specimen_detail_timeline_query(start_date, end_date, podID, location, 
                                               S1_score_thresh, S2_score_thresh, S2a_score_thresh, species_only)
     
     result = await db.execute(records_query)
     records = result.scalars().all()
 
-    # Handling images is still left as a placeholder. You'll have to add your logic here.
+    # DEV: image placeholder. Probably will not be implemented in this function
     if incl_images:
         pass
 
-    timeline_data = []
+    specimen_detail_timeline = []
     for record in records:
         record_dict = {
             "timestamp": record.timestamp.strftime(DATETIME_FORMAT_STRING),
@@ -192,9 +250,9 @@ async def grab_timeline_data(db: AsyncSession,
         }
         if incl_images:
             record_dict["image"] = None  # Placeholder, add your image logic here
-        timeline_data.append(record_dict)
+        specimen_detail_timeline.append(record_dict)
     
-    return timeline_data
+    return specimen_detail_timeline
 
 
 
