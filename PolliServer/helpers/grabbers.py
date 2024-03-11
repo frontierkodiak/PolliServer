@@ -7,7 +7,7 @@ from typing import Optional, List
 import traceback
 
 from PolliServer.constants import *
-from models.models import SpecimenRecord, PodRecord, FrameLog
+from models.models import SpecimenRecord, PodRecord, FrameLog, WeatherRecord
 from PolliServer.logger.logger import LoggerSingleton
 from PolliServer.helpers.getters import get_frame_counts, get_recent_location
 
@@ -66,6 +66,137 @@ async def grab_frame_log_array_data(db: AsyncSession, span: int, n_bins: int, sw
             })
 
     # Sort final_data by time_bin_midpoint
+    final_data_sorted = sorted(final_data, key=lambda x: datetime.datetime.strptime(x["time_bin_midpoint"], DATETIME_FORMAT_STRING))
+
+    return final_data_sorted
+
+# NOTE: For @app.get("/specimen-log-array-data") endpoint
+async def grab_specimen_log_array_data(db: AsyncSession, span: int, n_bins: int, swarm_name: Optional[str] = None, run_name: Optional[str] = None):
+    """
+    Fetches specimen log data, aggregated into time bins, optionally filtered by swarm_name and/or run_name.
+    
+    Args:
+        db (AsyncSession): Database session for executing queries.
+        span (int): Time span in hours for which to fetch data.
+        n_bins (int): Number of bins to divide the time span into.
+        swarm_name (Optional[str]): Name of the swarm to filter by. Default is None.
+        run_name (Optional[str]): Name of the run to filter by. Default is None.
+    
+    Returns:
+        List[Dict]: A list of dictionaries, each representing a time bin with the following keys:
+            - "time_bin_midpoint": The midpoint of the time bin, as a string in DATETIME_FORMAT_STRING format.
+            - "count": The number of specimens recorded in this time bin.
+            - "podID": The ID of the pod.
+    
+    This function mimics the structure and logic of grab_frame_log_array_data, but queries the SpecimenRecord table.
+    """
+    # Convert span from hours to a timedelta
+    span_delta = datetime.timedelta(hours=span)
+    end_datetime = datetime.datetime.utcnow()
+    start_datetime = end_datetime - span_delta
+
+    # Calculate the time interval for each bin
+    bin_interval = span_delta / n_bins
+
+    # Initialize a list to hold the midpoint of each time bin
+    bin_midpoints = [start_datetime + (i * bin_interval) + (bin_interval / 2) for i in range(n_bins)]
+
+    # Query all unique podIDs within the span to pre-populate the structure
+    pod_ids_query = select(SpecimenRecord.podID).distinct()
+    if swarm_name:
+        pod_ids_query = pod_ids_query.filter(SpecimenRecord.swarm_name == swarm_name)
+    if run_name:
+        pod_ids_query = pod_ids_query.filter(SpecimenRecord.run_name == run_name)
+    result = await db.execute(pod_ids_query)
+    all_podIDs = [row[0] for row in result.all()]
+
+    # Initialize a structure to hold the data for each podID for each time bin
+    specimen_log_dict = {podID: {bin_midpoint.strftime(DATETIME_FORMAT_STRING): 0 for bin_midpoint in bin_midpoints} for podID in all_podIDs}
+
+    for i in range(n_bins):
+        # Calculate the start and end time for the current bin
+        bin_start_time = start_datetime + i * bin_interval
+        bin_end_time = bin_start_time + bin_interval
+
+        # Build the query to count specimens and group by podID
+        query = select(SpecimenRecord.podID, func.count(SpecimenRecord.id)).\
+                filter(SpecimenRecord.timestamp.between(bin_start_time, bin_end_time))
+        if swarm_name:
+            query = query.filter(SpecimenRecord.swarm_name == swarm_name)
+        if run_name:
+            query = query.filter(SpecimenRecord.run_name == run_name)
+        query = query.group_by(SpecimenRecord.podID)
+
+        # Execute the query
+        result = await db.execute(query)
+        specimens_per_pod = result.all()
+
+        # Update the structure with actual counts
+        for podID, count in specimens_per_pod:
+            specimen_log_dict[podID][bin_midpoints[i].strftime(DATETIME_FORMAT_STRING)] = count
+
+    # Convert the dictionary to the list of objects expected by the frontend
+    final_data = []
+    for podID, bins in specimen_log_dict.items():
+        for bin_midpoint, count in bins.items():
+            final_data.append({
+                "time_bin_midpoint": bin_midpoint,
+                "count": count,
+                "podID": podID
+            })
+
+    # Sort final_data by time_bin_midpoint
+    final_data_sorted = sorted(final_data, key=lambda x: datetime.datetime.strptime(x["time_bin_midpoint"], DATETIME_FORMAT_STRING))
+
+    return final_data_sorted
+
+# NOTE: For @app.get("/weather-log-array-data") endpoint
+async def grab_weather_log_array_data(db: AsyncSession, span: int, n_bins: int, swarm_name: Optional[str] = None, lite: bool = False):
+    """
+    Fetches weather log data, aggregated into time bins, optionally filtered by swarm_name.
+    If 'lite' is True, only returns a subset of the weather data.
+
+    Args:
+        db (AsyncSession): Database session for executing queries.
+        span (int): Time span in hours for which to fetch data.
+        n_bins (int): Number of bins to divide the time span into.
+        swarm_name (Optional[str]): Name of the swarm to filter by. Default is None.
+        lite (bool): Whether to return a lite version of the data. Default is False.
+    
+    Returns:
+        List[Dict]: A list of dictionaries, each representing a time bin with weather data.
+    """
+    span_delta = datetime.timedelta(hours=span)
+    end_datetime = datetime.datetime.utcnow()
+    start_datetime = end_datetime - span_delta
+    bin_interval = span_delta / n_bins
+    bin_midpoints = [start_datetime + (i * bin_interval) + (bin_interval / 2) for i in range(n_bins)]
+
+    query = select(WeatherRecord).where(WeatherRecord.timestamp.between(start_datetime, end_datetime))
+    if swarm_name:
+        query = query.filter(WeatherRecord.swarm_name == swarm_name)
+    
+    result = await db.execute(query)
+    weather_records = result.scalars().all()
+
+    # Initialize a dictionary to hold the closest record to each bin midpoint
+    closest_records = {}
+
+    for bin_midpoint in bin_midpoints:
+        closest_record = None
+        smallest_diff = None
+        for record in weather_records:
+            current_diff = abs(record.timestamp - bin_midpoint)
+            if closest_record is None or current_diff < smallest_diff:
+                closest_record = record
+                smallest_diff = current_diff
+        if closest_record:
+            data = {field: getattr(closest_record, field) for field in WeatherRecord.__table__.columns.keys() if getattr(closest_record, field) is not None}
+            if lite:
+                data = {k: v for k, v in data.items() if k in ["cloud_coverage", "wind_speed", "humidity", "temperature", "uv_index"]}
+            closest_records[bin_midpoint.strftime(DATETIME_FORMAT_STRING)] = data
+
+    final_data = [{"time_bin_midpoint": key, "data": value} for key, value in closest_records.items()]
     final_data_sorted = sorted(final_data, key=lambda x: datetime.datetime.strptime(x["time_bin_midpoint"], DATETIME_FORMAT_STRING))
 
     return final_data_sorted

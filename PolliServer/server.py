@@ -270,9 +270,17 @@ async def frame_log_stats(span: int, swarm_name: Optional[str] = None, run_name:
         raise HTTPException(status_code=500, detail="Internal server error")
     
     
-# For SpecimenLogHorizon    
-# TODO: Make specimen_log_array_data grabber? Or is clade_activity_array_data sufficient?
-# DEV: Table this endpoint for now, SpecimenDetailHorizon is the good enough for now
+# For SpecimenLogHorizon
+## Get total no. specimens for a given time span. Optionally filter by swarm_name and run_name.
+## Params: span (int, hours), n_bins (int, default =10), swarm_name (str, default=None), run_name (str, default=None)
+## Returns: specimen_log_array_data (list of lists). Each list contains: [time_bin_midpoint, count, podID]
+@app.get("/specimen-log-array-data")
+async def specimen_log_array_data(span: int = 24, n_bins: int = 10, swarm_name: Optional[str] = None, run_name: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    try:
+        return await grab_specimen_log_array_data(db, span, n_bins, swarm_name, run_name)
+    except Exception as e:
+        logger.server_error(f"Error in specimen_log_array_data endpoint: {e}")
+        traceback.print_exc()
 
 # For SpecimenLogStats
 ## Get the total no. specimens for a given time span and the previous time span. Optionally filter by swarm_name and run_name.
@@ -289,6 +297,32 @@ async def specimen_log_stats(span: int, swarm_name: Optional[str] = None, run_na
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Internal server error")
     
+# For WeatherLogHorizon
+## Get the weather data for a given time span. Optionally filter by swarm_name.
+## Params: span (int, hours), n_bins (int, default=10), swarm_name (str, default=None)
+## Returns: weather_log_array_data (list of lists). Each list contains: [time_bin_midpoint, cloud_coverage, rain_last_3h, wind_degree, wind_speed, humidity, pressure, temperature, aqi, coi, nh3i, noi, no2i, o3i, so2i, pm2_5i, pm10i, uv_index]
+@app.get("/weather-log-array-data")
+async def weather_log_array_data(span: int = 24, n_bins: int = 10, swarm_name: Optional[str] = None, lite: bool = False, db: AsyncSession = Depends(get_db)):
+    """
+    Endpoint to fetch weather log data, aggregated into time bins, optionally filtered by swarm_name.
+    If 'lite' is True, only returns a subset of the weather data.
+
+    Args:
+        span (int): Time span in hours for which to fetch data.
+        n_bins (int): Number of bins to divide the time span into.
+        swarm_name (Optional[str]): Name of the swarm to filter by. Default is None.
+        lite (bool): Whether to return a lite version of the data. Default is False.
+    
+    Returns:
+        JSON response containing the weather data for each time bin.
+    """
+    try:
+        weather_data = await grab_weather_log_array_data(db, span, n_bins, swarm_name, lite)
+        return weather_data
+    except Exception as e:
+        logger.server_error(f"Error in weather_log_array_data endpoint: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")   
     
 # NOTE: We are splitting this into frame-log-stats and specimen-log-stats
 @app.get("/swarm-stats")
